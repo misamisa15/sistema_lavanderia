@@ -41,10 +41,10 @@ def buscar_producto():
     nom = data.get('nombre')
 
     cursor = mysql.connection.cursor()
-    # Modificamos la consulta para obtener el primer cliente registrado
+    # Modificamos la consulta para obtener el producto registrado
     query = "SELECT id_producto_inv, nombre, descripcion,stock, precio, fecha FROM producto where nombre = %s;"  
     cursor.execute(query,(nom,))
-    producto = cursor.fetchone()  # Obtiene la primera fila (primer producto)
+    producto = cursor.fetchone()  # Obtiene la primera fila 
     cursor.close()
 
     if producto:
@@ -121,7 +121,7 @@ def paguser():
     ]
     ima = [
         
-        {'image': 'images/logo_lava.jpg'},
+        {'image': 'images/logo_lavadora.png'},
         {'image': 'images/imagen_horario_car.jpeg'},
         {'image': 'images/publi_lava.jpg'}
     ]
