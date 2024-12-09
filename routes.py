@@ -154,8 +154,23 @@ products = [
     {'name': 'Producto 2', 'description': 'Descripción del Producto 2', 'price': 15.5},
     # Agrega más productos si deseas
 ]
-@app.route('/produc_servicios', methods=['GET', 'POST'])
+
+@app.route('/user_productos.html', methods=['GET', 'POST'])
 def produc_servicios():
+
+    menu = [
+        {'text': 'Inicio','link':'/pagina_user'},
+        {'text': 'Turnos', 'link': '/turnos'},
+        {'text': 'Servicios'},
+        {'text': 'Compras'},
+        {'text': 'Facturas'}
+    ]
+    ima = [
+        
+        {'image': 'images/logo_lava.jpg'},
+        {'image': 'images/imagen_horario_car.jpeg'},
+        {'image': 'images/publi_lava.jpg'}
+    ]
     if request.method == 'POST':
         # Recibir datos del formulario
         product_name = request.form.get('product_name')
@@ -165,10 +180,10 @@ def produc_servicios():
         products.append({'name': product_name, 'description': product_description})
         
         # Redirigir a la misma página después de añadir el producto
-        return redirect(url_for('produc_servicios'))
+        return redirect(url_for('/user_productos.html'),menu=menu, ima=ima)
     
     # Renderizar la plantilla de productos
-    return render_template('produc_servicios.html')
+    return render_template('produc_servicios.html' ,menu=menu, ima=ima)
 
 @app.route('/clientes', methods=['GET', 'POST'])
 def clientes():
