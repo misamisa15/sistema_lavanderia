@@ -155,6 +155,12 @@ products = [
     # Agrega más productos si deseas
 ]
 
+@app.route('/inicio_sesion.html')
+def inicioSesion():
+
+
+    return render_template('pg_iniciosesion.html')
+
 @app.route('/user_productos.html', methods=['GET', 'POST'])
 def produc_servicios():
 
