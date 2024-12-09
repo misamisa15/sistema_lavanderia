@@ -48,7 +48,7 @@ def buscar_producto():
     cursor.close()
 
     if producto:
-        # Devuelve los datos del primer cliente como JSON
+        # Devuelve los datos del primer producto como JSON
         return jsonify({
             "id_producto_inv": producto[0],
             "nombre": producto[1],
@@ -149,17 +149,38 @@ def pagturnos():
 
     return render_template('turnos.html',menu=menu, ima=ima)
 
-products = [
-    {'name': 'Producto 1', 'description': 'Descripción del Producto 1', 'price': 10.0},
-    {'name': 'Producto 2', 'description': 'Descripción del Producto 2', 'price': 15.5},
-    # Agrega más productos si deseas
-]
 
 @app.route('/inicio_sesion.html')
 def inicioSesion():
 
-
     return render_template('pg_iniciosesion.html')
+
+@app.route('/inicioSesion', methods=['POST'])
+def iniciarSesion():
+    data = request.json 
+    usuario = data.get('user')
+    clave= data.get('pass')
+
+    cursor = mysql.connection.cursor()
+
+    query = "SELECT id_cliente, usuario_cliente, nombres, apellidos, cedula, ruc, vehiculo FROM cliente WHERE usuario_cliente = %s AND clave = %s;"  
+    cursor.execute(query,(usuario,clave,))
+    cliente_infor = cursor.fetchone()  # Obtiene la primera fila 
+    cursor.close()
+
+    if cliente_infor:
+        # Devuelve los datos del primer cliente como JSON
+        return jsonify({
+            "id_cliente": cliente_infor[0],
+            "nombres": cliente_infor[2],
+            "apellidos": cliente_infor[3],
+            "cedula": cliente_infor[4],
+            "ruc":cliente_infor[5],
+            "vehiculo":cliente_infor[6]
+        })
+    else:
+        return jsonify({"error": "Credenciales no validas."}), 404
+
 
 @app.route('/user_productos.html', methods=['GET', 'POST'])
 def produc_servicios():
@@ -190,27 +211,3 @@ def produc_servicios():
     
     # Renderizar la plantilla de productos
     return render_template('produc_servicios.html' ,menu=menu, ima=ima)
-
-@app.route('/clientes', methods=['GET', 'POST'])
-def clientes():
-    # Lista de clientes (en este caso, lista simulada, puedes cambiarla por una base de datos)
-    clientes = [
-        {'cedula': '1234567890', 'nombres': 'Juan Pérez', 'telefono': '0987654321', 'correo': 'juan@example.com'},
-        {'cedula': '0987654321', 'nombres': 'María López', 'telefono': '0981234567', 'correo': 'maria@example.com'},
-    ]
-
-    if request.method == 'POST':
-        # Obtener datos del formulario
-        cedula = request.form.get('cedula')
-        nombres = request.form.get('nombres')
-        telefono = request.form.get('telefono')
-        correo = request.form.get('correo')
-        
-        # Agregar nuevo cliente a la lista (o base de datos)
-        clientes.append({'cedula': cedula, 'nombres': nombres, 'telefono': telefono, 'correo': correo})
-        
-        # Redirigir a la misma página para actualizar la lista
-        return redirect(url_for('clientes'))
-    
-    # Renderizar la plantilla de clientes
-    return render_template('clientes.html', clientes=clientes)
