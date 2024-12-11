@@ -16,8 +16,8 @@ cursor = mysql.connection.cursor()
 @app.route('/')
 def index():
     buttons = [
-        {'icon': 'person', 'text': 'Clientes'},
-        {'icon': 'database', 'text': 'Produc/Servicios'},
+        {'icon': 'person', 'text': 'Clientes', 'url':'/cliente.html'},
+        {'icon': 'database', 'text': 'Produc/Servicios', 'url':'/productos.html'},
         {'icon': 'file-earmark-check', 'text': 'Nueva Factura'},
         {'icon': 'receipt', 'text': 'Comprobantes'},
         {'icon': 'receipt-cutoff', 'text': 'Nueva Retención'},
@@ -28,6 +28,7 @@ def index():
         {'icon': 'file-earmark-text', 'text': 'Proformas'},
         {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'}
     ]
+    
     return render_template('pagina_principal.html', buttons=buttons)
 
 
@@ -149,10 +150,69 @@ def pagturnos():
 
     return render_template('turnos.html',menu=menu, ima=ima)
 
+@app.route('/registro.html')
+def registro():
+    return render_template('registro.html')
+
+@app.route('/registroUsuario', methods=['POST'])
+def nuevoUsuario():
+    data=request.json
+    usuario=data.get('user')
+    clave=data.get('pass')
+    nombres=data.get('nombre')
+    apellidos=data.get('apellido')
+    cedula=data.get('cedula')
+    ruc=data.get('ruc')
+    telefono=data.get('telefono')
+    vehiculo=data.get('vehiculo')
+    cursor= mysql.connection.cursor()
+    banderaUser=True
+    banderaCed=True
+    banderaRuc=True
+    banderaTel=True
+    
+    query="Select * from cliente where usuario_cliente = %s;"
+    cursor.execute(query,(usuario,))
+    nom_usuario = cursor.fetchone()
+    if nom_usuario:
+        banderaUser=False
+        return jsonify({"error": "Hay usuario registrado con ese username."}), 404
+
+
+    query="Select * from cliente where cedula = %s;"
+    cursor.execute(query,(cedula,))
+    ced_usuario = cursor.fetchone()
+    if ced_usuario:
+        banderaCed=False
+        return jsonify({"error": "Hay usuario registrado con esa cedula."}), 404
+    
+    if ruc and ruc.strip():  # Verifica si ruc no es None y no está vacío
+        query = "SELECT * FROM cliente WHERE ruc = %s;"
+        cursor.execute(query, (ruc,))
+        ruc_usuario = cursor.fetchone()
+        if ruc_usuario:
+            banderaRuc = False
+            return jsonify({"error": "Hay usuario registrado con ese ruc."}), 404
+
+    query="Select * from cliente where telefono = %s;"
+    cursor.execute(query,(telefono,))
+    tel_usuario = cursor.fetchone()
+    if tel_usuario:
+        banderaTel=False
+        return jsonify({"error": "Hay usuario registrado con ese número de telefono."}), 404
+
+    
+    if banderaUser==True & banderaCed==True & banderaRuc==True &banderaTel==True:
+        query="insert into cliente (usuario_cliente,clave, nombres, apellidos,cedula,ruc,telefono,vehiculo) values(%s,%s,%s,%s,%s,%s,%s,%s);"
+        cursor.execute(query,(usuario,clave,nombres,apellidos,cedula,ruc,telefono,vehiculo))
+        mysql.connection.commit()
+        cursor.close()
+        return jsonify({"message": "Se ha registrado con éxito."}), 200
+
 
 @app.route('/inicio_sesion.html')
 def inicioSesion():
-
+ 
     return render_template('pg_iniciosesion.html')
 
 @app.route('/inicioSesion', methods=['POST'])
@@ -192,12 +252,7 @@ def produc_servicios():
         {'text': 'Compras'},
         {'text': 'Facturas'}
     ]
-    ima = [
-        
-        {'image': 'images/logo_lava.jpg'},
-        {'image': 'images/imagen_horario_car.jpeg'},
-        {'image': 'images/publi_lava.jpg'}
-    ]
+
     if request.method == 'POST':
         # Recibir datos del formulario
         product_name = request.form.get('product_name')
@@ -207,7 +262,7 @@ def produc_servicios():
         products.append({'name': product_name, 'description': product_description})
         
         # Redirigir a la misma página después de añadir el producto
-        return redirect(url_for('/user_productos.html'),menu=menu, ima=ima)
+        return redirect(url_for('/user_productos.html'),menu=menu)
     
     # Renderizar la plantilla de productos
-    return render_template('produc_servicios.html' ,menu=menu, ima=ima)
+    return render_template('produc_servicios.html' ,menu=menu)
