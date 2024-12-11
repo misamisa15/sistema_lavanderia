@@ -4,113 +4,92 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h1 class="text-center mb-4">Lista de Productos</h1>
-  <div class="row">
+  <h1 class="text-center mb-4">Lista de Servicios</h1>
+  <div class="row service-list">
+    
     <!-- Producto 1 -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4 service-card">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">COCA COLA</h5>
-          <p class="card-text">300ML</p>
-          <p class="card-text"><strong>Valor:</strong> $0.70</p>
+          <div class="service-info">
+            <h5 class="card-title">EXPRESS</h5>
+            <p class="card-text">Lavado por fuera.</p>
+            <p class="card-text"><strong>Valor:</strong> $5.00</p>
+          </div>
+          <img src="{{ url_for('static', filename='images/auto.png') }}" alt="EXPRESS" class="service-image">
         </div>
       </div>
     </div>
 
     <!-- Producto 2 -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4 service-card">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">POWERADE</h5>
-          <p class="card-text">240ML.</p>
-          <p class="card-text"><strong>Valor:</strong> $0.50</p>
+          <div class="service-info">
+            <h5 class="card-title">SILVER</h5>
+            <p class="card-text">Lavado por dentro y por fuera.</p>
+            <p class="card-text"><strong>Valor:</strong> $7.00</p>
+          </div>
+          <img src="{{ url_for('static', filename='images/carrito_limpio.png') }}" alt="SILVER" class="service-image">
         </div>
       </div>
     </div>
 
     <!-- Producto 3 -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4 service-card">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">DASANI</h5>
-          <p class="card-text">1L.</p>
-          <p class="card-text"><strong>Valor:</strong> $1.00</p>
+          <div class="service-info">
+            <h5 class="card-title">COMPLETO</h5>
+            <p class="card-text">Lavado por dentro, por fuera, motor y chasis.</p>
+            <p class="card-text"><strong>Valor:</strong> $15.00</p>
+          </div>
+          <img src="{{ url_for('static', filename='images/auto.png') }}" alt="COMPLETO" class="service-image">
         </div>
       </div>
     </div>
 
-    <!-- Separación para "Servicios" -->
-    <div class="col-12 my-4">
-      <hr>
-      <h3 class="text-center">Lista de Servicios</h3>
-      <hr>
-    </div>
-
     <!-- Producto 4 -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4 service-card">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">EXPRESS</h5>
-          <p class="card-text">Lavado por fuera.</p>
-          <p class="card-text"><strong>Valor:</strong> $5.00</p>
+          <div class="service-info">
+            <h5 class="card-title">MOTOR</h5>
+            <p class="card-text">Lavado motor.</p>
+            <p class="card-text"><strong>Valor:</strong> $4.00</p>
+          </div>
+          <img src="{{ url_for('static', filename='img/motor.jpg') }}" alt="MOTOR" class="service-image">
         </div>
       </div>
     </div>
 
     <!-- Producto 5 -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4 service-card">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">SILVER</h5>
-          <p class="card-text">Lavado por dentro y por fuera.</p>
-          <p class="card-text"><strong>Valor:</strong> $7.00</p>
+          <div class="service-info">
+            <h5 class="card-title">CHASIS</h5>
+            <p class="card-text">Lavado chasis.</p>
+            <p class="card-text"><strong>Valor:</strong> $6.00</p>
+          </div>
+          <img src="{{ url_for('static', filename='img/chasis.jpg') }}" alt="CHASIS" class="service-image">
         </div>
       </div>
     </div>
 
     <!-- Producto 6 -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4 service-card">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">COMPLETO</h5>
-          <p class="card-text">LAVADO POR DENTRO POR FUERA, MOTOR Y CHASIS.</p>
-          <p class="card-text"><strong>Valor:</strong> $15.00</p>
+          <div class="service-info">
+            <h5 class="card-title">MOTO</h5>
+            <p class="card-text">Lavado moto.</p>
+            <p class="card-text"><strong>Valor:</strong> $3.50</p>
+          </div>
+          <img src="{{ url_for('static', filename='img/moto.jpg') }}" alt="MOTO" class="service-image">
         </div>
       </div>
     </div>
-
-    <!-- Producto 7 -->
-    <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">MOTOR</h5>
-            <p class="card-text">LAVADO MOTOR.</p>
-            <p class="card-text"><strong>Valor:</strong> $4.00</p>
-          </div>
-        </div>
-      </div>       
-
-    <!-- Producto 8 -->
-    <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">CHASIS</h5>
-            <p class="card-text">LAVADO CHASIS.</p>
-            <p class="card-text"><strong>Valor:</strong> $6.00</p>
-          </div>
-        </div>
-      </div>
-
-    <!-- Producto 9 -->
-    <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">MOTO</h5>
-            <p class="card-text">LAVADO MOTO.</p>
-            <p class="card-text"><strong>Valor:</strong> $3.50</p>
-          </div>
-        </div>
-      </div>
   </div>
 </div>
 {% endblock %}
