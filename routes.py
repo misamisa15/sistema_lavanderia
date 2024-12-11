@@ -252,12 +252,7 @@ def produc_servicios():
         {'text': 'Compras'},
         {'text': 'Facturas'}
     ]
-    ima = [
-        
-        {'image': 'images/logo_lava.jpg'},
-        {'image': 'images/imagen_horario_car.jpeg'},
-        {'image': 'images/publi_lava.jpg'}
-    ]
+
     if request.method == 'POST':
         # Recibir datos del formulario
         product_name = request.form.get('product_name')
@@ -267,7 +262,7 @@ def produc_servicios():
         products.append({'name': product_name, 'description': product_description})
         
         # Redirigir a la misma página después de añadir el producto
-        return redirect(url_for('/user_productos.html'),menu=menu, ima=ima)
+        return redirect(url_for('/user_productos.html'),menu=menu)
     
     # Renderizar la plantilla de productos
-    return render_template('produc_servicios.html' ,menu=menu, ima=ima)
+    return render_template('produc_servicios.html' ,menu=menu)
