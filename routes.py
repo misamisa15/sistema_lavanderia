@@ -113,8 +113,8 @@ def buscar_cliente():
 @app.route('/pagina_user.html')
 def paguser():
     menu = [
-        {'text': 'Inicio','link':'/pagina_user'},
-        {'text': 'Turnos', 'link': '/turnos'},
+        {'text': 'Inicio','url':'/pagina_user.html'},
+        {'text': 'Turnos', 'url': '/turnos.html'},
         {'text': 'Servicios'},
         {'text': 'Compras'},
         {'text': 'Facturas'}
@@ -133,8 +133,8 @@ def paguser():
 @app.route('/turnos.html')
 def pagturnos():
     menu = [
-        {'text': 'Inicio','link':'/pagina_user'},
-        {'text': 'Turnos', 'link': '/turnos'},
+        {'text': 'Inicio','url':'/pagina_user.html'},
+        {'text': 'Turnos', 'url': '/turnos.html'},
         {'text': 'Servicios'},
         {'text': 'Compras'},
         {'text': 'Facturas'}

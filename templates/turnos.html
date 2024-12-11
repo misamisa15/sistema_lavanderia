@@ -1,11 +1,66 @@
 {% extends "plantilla_base_user.html" %}
 
-{% block title %}Agendamiento de turnos{% endblock %}
+{% block title %}Agendamiento de Turnos{% endblock %}
 
 {% block extra_css %}
 
 {% endblock %}
 
 {% block content %}
-{% endblock %}
+<div class="container my-5 d-flex justify-content-center">
+    <div class="form-container mx-auto bg-light p-4 rounded border border-3 border-success">
 
+    
+  <h2 class="text-center text-success mb-4">Agendamiento de Turnos</h2>
+  <form action="/agendar_turno" method="POST" class="p-3">
+
+    <!-- Número de Cédula -->
+    <div class="mb-3">
+      <label for="cedula" class="form-label text-danger">Número de Cédula:</label>
+      <input type="text" class="form-control border-danger" id="cedula" placeholder="Ingrese su número de cédula" name="cedula" maxlength="10" required>
+    </div>
+
+    <!-- Tipo de Servicio -->
+    <div class="mb-3">
+      <label for="servicio" class="form-label text-danger">Tipo de Servicio:</label>
+      <select class="form-select border-danger" id="servicio" name="servicio" required>
+        <option value="" disabled selected>Seleccione un servicio</option>
+        <option value="1">Servicio 1</option>
+        <option value="2">Servicio 2</option>
+        <option value="3">Servicio 3</option>
+        <option value="4">Servicio 4</option>
+        <option value="5">Servicio 5</option>
+        <option value="6">Servicio 6</option>
+        <option value="7">Servicio 7</option>
+        <option value="8">Servicio 8</option>
+        <option value="9">Servicio 9</option>
+        <option value="10">Servicio 10</option>
+        <option value="11">Servicio 11</option>
+        <option value="12">Servicio 12</option>
+        <option value="13">Servicio 13</option>
+        <option value="14">Servicio 14</option>
+        <option value="15">Servicio 15</option>
+        <option value="16">Servicio 16</option>
+      </select>
+    </div>
+
+    <!-- Fecha -->
+    <div class="mb-3">
+      <label for="fecha" class="form-label text-danger">Fecha:</label>
+      <input type="date" class="form-control border-danger" id="fecha" name="fecha" required>
+    </div>
+
+    <!-- Hora -->
+    <div class="mb-3">
+      <label for="hora" class="form-label text-danger">Hora:</label>
+      <input type="time" class="form-control border-danger" id="hora" name="hora" required>
+    </div>
+
+    <!-- Botón de Envío -->
+    <div class="d-grid">
+      <button type="submit" class="btn btn-success text-white fw-bold">Agendar Turno</button>
+    </div>
+  </form>
+</div>
+</div>
+{% endblock %}

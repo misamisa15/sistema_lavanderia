@@ -29,13 +29,14 @@
     justify-content: center;
 }
 #menu{
-    background-color: rgb(5, 5, 5);
+    background-color: rgb(40, 38, 38);
 }
 .contexto2{
     background-color: #aba49b;
 }
 .conteFooter{
     background-color: black;
+    justify-content:end;
 }
 .boton{
     background-color: rgb(57, 215, 139);
