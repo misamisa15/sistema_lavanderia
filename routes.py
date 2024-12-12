@@ -27,10 +27,11 @@ def index():
         {'icon': 'file-earmark-minus', 'text': 'Nota de Débito'},
         {'icon': 'journal-album', 'text': 'Liquidación de Compras'},
         {'icon': 'file-earmark-text', 'text': 'Proformas'},
-        {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'}
+        {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
     ]
     
     return render_template('pagina_principal.html', buttons=buttons)
+
 
 @app.route('/servicios.html')
 def pagser():
