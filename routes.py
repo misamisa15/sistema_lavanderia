@@ -116,7 +116,7 @@ def paguser():
     menu = [
         {'text': 'Inicio','url':'/pagina_user.html'},
         {'text': 'Turnos', 'url': '/turnos.html'},
-        {'text': 'Servicios'},
+        {'text': 'Servicios','url':'/produc_servicios.html'},
         {'text': 'Compras'},
         {'text': 'Facturas'}
     ]
@@ -266,3 +266,6 @@ def produc_servicios():
     
     # Renderizar la plantilla de productos
     return render_template('produc_servicios.html' ,menu=menu)
+
+
+

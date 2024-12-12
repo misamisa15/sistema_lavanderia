@@ -21,15 +21,22 @@
 <body>
 
   <nav class="navbar navbar-expand justify-content-center sticky-top" id="menu">
-    <ul class="navbar-nav">
+    <ul class="navbar-nav mx-auto">
         {% for item in menu %}
         <li class="nav-item">
             <a class="nav-link text-danger my-2" href="{{item.url}}">{{ item.text }}</a>
             
         </li>
+
         {% endfor %}
       
     </ul>
+    <div class="container-end">
+      <a class="navbar-brand ms-auto" href="#">
+        <!--img src="" alt="Logo" style="width:40px;" class="rounded-pill"--> 
+        <i class="bi bi-person-circle logo"></i>
+      </a>
+    </div>
   
   </nav>
 
