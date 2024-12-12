@@ -17,7 +17,8 @@ cursor = mysql.connection.cursor()
 def index():
     buttons = [
         {'icon': 'person', 'text': 'Clientes', 'url':'/cliente.html'},
-        {'icon': 'database', 'text': 'Produc/Servicios', 'url':'/productos.html'},
+        {'icon': 'database', 'text': 'Productos', 'url':'/productos.html'},
+        {'icon': 'file-earmark-check', 'text': 'Servicios','url':'/servicios.html'},
         {'icon': 'file-earmark-check', 'text': 'Nueva Factura'},
         {'icon': 'receipt', 'text': 'Comprobantes'},
         {'icon': 'receipt-cutoff', 'text': 'Nueva Retención'},
@@ -30,6 +31,35 @@ def index():
     ]
     
     return render_template('pagina_principal.html', buttons=buttons)
+
+@app.route('/servicios.html')
+def pagser():
+    return render_template('pg_servicios.html')
+
+@app.route('/servicios', methods=['POST'])
+def buscar_servicio():
+    data = request.json 
+    nom = data.get('nombre')
+
+    cursor = mysql.connection.cursor()
+    # Modificamos la consulta para obtener el producto registrado
+    query = "SELECT id_servicio, nombre_servicio, descripcion, precio, fecha_creacion FROM servicio where nombre_servicio = %s;"  
+    cursor.execute(query,(nom,))
+    producto = cursor.fetchone()  # Obtiene la primera fila 
+    cursor.close()
+
+    if producto:
+        # Devuelve los datos del primer producto como JSON
+        return jsonify({
+            "id_servicio": producto[0],
+            "nombre": producto[1],
+            "descripcion": producto[2],
+            "precio":producto[3],
+            "fecha":producto[4]
+        })
+    else:
+        return jsonify({"error": "No hay servicio registrado"}), 404
+
 
 
 @app.route('/productos.html')
@@ -68,16 +98,13 @@ def agregar_actualizar_producto():
     nom = data.get('nombre')
     desc = data.get('descripcion')
     stock = data.get('stock')
-    precio = data.get('precio')  # Corregir la variable 'precio'
+    precio = data.get('precio') 
 
-    # Ejecutar el procedimiento almacenado en MySQL
     cursor = mysql.connection.cursor()
-    query = "CALL insertarProducto(%s, %s, %s, %s)"  # Eliminar la coma extra
+    query = "CALL insertarProducto(%s, %s, %s, %s)"  
     cursor.execute(query, (nom, desc, stock, precio))
-    mysql.connection.commit()  # Asegurarse de guardar los cambios en la base de datos
+    mysql.connection.commit()  
     cursor.close()
-
-    # Devolver una respuesta al cliente
     return jsonify({"message": "Producto agregado o actualizado con éxito"}), 200
 
 
@@ -116,9 +143,9 @@ def paguser():
     menu = [
         {'text': 'Inicio','url':'/pagina_user.html'},
         {'text': 'Turnos', 'url': '/turnos.html'},
-        {'text': 'Servicios'},
-        {'text': 'Compras'},
-        {'text': 'Facturas'}
+        {'text': 'Servicios','url':'/user_servicios.html'},
+        {'text': 'Compras','url':'/user_productos.html'},
+        {'text': 'Facturas','url':'/user_facturas.html'}
     ]
     ima = [
         
@@ -126,8 +153,6 @@ def paguser():
         {'image': 'images/imagen_horario_car.jpeg'},
         {'image': 'images/publi_lava.jpg'}
     ]
-
-
     return render_template('pagina_user.html',menu=menu, ima=ima)
 
 
@@ -136,9 +161,9 @@ def pagturnos():
     menu = [
         {'text': 'Inicio','url':'/pagina_user.html'},
         {'text': 'Turnos', 'url': '/turnos.html'},
-        {'text': 'Servicios'},
-        {'text': 'Compras'},
-        {'text': 'Facturas'}
+        {'text': 'Servicios','url':'/user_servicios.html'},
+        {'text': 'Compras','url':'/user_productos.html'},
+        {'text': 'Facturas','url':'/user_facturas.html'}
     ]
     ima = [
         
@@ -242,27 +267,61 @@ def iniciarSesion():
         return jsonify({"error": "Credenciales no validas."}), 404
 
 
-@app.route('/user_productos.html', methods=['GET', 'POST'])
+@app.route('/user_servicios.html', methods=['GET', 'POST'])
 def produc_servicios():
 
     menu = [
-        {'text': 'Inicio','link':'/pagina_user'},
-        {'text': 'Turnos', 'link': '/turnos'},
-        {'text': 'Servicios'},
-        {'text': 'Compras'},
-        {'text': 'Facturas'}
+        {'text': 'Inicio','url':'/pagina_user.html'},
+        {'text': 'Turnos', 'url': '/turnos.html'},
+        {'text': 'Servicios','url':'/user_servicios.html'},
+        {'text': 'Compras','url':'/user_productos.html'},
+        {'text': 'Facturas','url':'/user_facturas.html'}
     ]
+    cursor = mysql.connection.cursor()
+    query="Select nombre_servicio,descripcion, precio from servicio;"
+    cursor.execute(query)
+    servicios = cursor.fetchall()      
+    cursor.close()
 
-    if request.method == 'POST':
-        # Recibir datos del formulario
-        product_name = request.form.get('product_name')
-        product_description = request.form.get('product_description')
-        
-        # Añadir el producto a la lista o base de datos
-        products.append({'name': product_name, 'description': product_description})
-        
-        # Redirigir a la misma página después de añadir el producto
-        return redirect(url_for('/user_productos.html'),menu=menu)
-    
-    # Renderizar la plantilla de productos
-    return render_template('produc_servicios.html' ,menu=menu)
+    if servicios:
+        return render_template('pg_servicios_user.html', menu=menu, servicios=servicios)
+    else:
+        return jsonify({"error": "No hay servicios."}), 404
+
+@app.route('/servicioAgregar',methods=['POST'])
+def servicio_agre_act():
+    data = request.json
+    nom = data.get('nombre')
+    desc = data.get('descripcion')
+    precio = data.get('precio') 
+# Validar datos
+    if not nom or not desc or precio is None or not isinstance(precio, (int, float)):
+            return jsonify({"error": "Datos inválidos"}), 400
+    cursor = mysql.connection.cursor()
+    query = "INSERT INTO servicio(nombre_servicio,descripcion, precio)values(%s, %s, %s)"  
+    cursor.execute(query, (nom, desc, precio))
+    mysql.connection.commit()  
+    cursor.close()
+    return jsonify({"message": "Servicio agregado con éxito"}), 200
+
+
+
+@app.route('/user_productos.html')
+def user_producto():
+    menu = [
+        {'text': 'Inicio','url':'/pagina_user.html'},
+        {'text': 'Turnos', 'url': '/turnos.html'},
+        {'text': 'Servicios','url':'/user_servicios.html'},
+        {'text': 'Compras','url':'/user_productos.html'},
+        {'text': 'Facturas','url':'/user_facturas.html'}
+    ]
+    cursor = mysql.connection.cursor()
+    query="Select nombre,descripcion, precio from producto where stock > 0;"
+    cursor.execute(query)
+    productos = cursor.fetchall()      
+    cursor.close()
+
+    if productos:
+        return render_template('pg_productos_user.html', menu=menu, productos=productos)
+    else:
+        return jsonify({"error": "No hay productos."}), 404

@@ -16,15 +16,27 @@
 			vehiculo VARCHAR(40)
 		);
 
+		-- Tabla servicios
+		CREATE TABLE IF NOT EXISTS servicio(
+			id_servicio int AUTO_INCREMENT primary key,
+			nombre_servicio varchar(20) not null,
+			descripcion varchar(30),
+			precio double not null,
+			fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+
 		-- Tabla turno
 		CREATE TABLE IF NOT EXISTS turno (
 			id_turno INT AUTO_INCREMENT PRIMARY KEY,
 			id_cliente INT NOT NULL,
-			tipo_servicio ENUM("1", "2", "3"),
+			tipo_servicio int not null,
 			fecha_hora TIMESTAMP NOT NULL,
 			CONSTRAINT fk_turn_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
-				ON DELETE CASCADE ON UPDATE CASCADE
+				ON DELETE CASCADE ON UPDATE CASCADE,
+			CONSTRAINT fk_turn_servicio FOREIGN KEY(tipo_servicio) REFERENCES servicio (id_servicio)
+				ON DELETE CASCADE ON UPDATE CASCADE	
 		);
+
 
 		-- Tabla comprobante
 		CREATE TABLE IF NOT EXISTS comprobante (
@@ -202,3 +214,7 @@
 
 
 		CALL insertarProducto("Rufles", "Papitas fritas rufles", 10, 0.50);
+		
+        
+        
+        
