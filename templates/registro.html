@@ -1,5 +1,7 @@
 {% extends "plantilla_base_user.html" %}
 
+{%block title%} Registro {%endblock%}
+
 {%block extra_css%}
 <link rel="stylesheet" href="{{ url_for('static', filename='estilo_registro.css') }}">
 {%endblock%}
@@ -76,13 +78,13 @@
         if (response.ok) {
             const data = await response.json();
             alert(`Bienvenido. Registrado con éxito.`);
+            window.location.href = "/pagina_user.html";
           
         } else {
             const errorData = await response.json();
             alert(errorData.error);
             
         }
-
     });
 </script>
 

@@ -44,6 +44,8 @@
             alert(`Bienvenido ${data.nombres} ${data.apellidos}`);
             errorMessage.style.display = "none";
             errorMessage.textContent = "";
+            window.location.href = "/pagina_user.html";
+
         } else {
             const errorData = await response.json();
             errorMessage.textContent = errorData.error;

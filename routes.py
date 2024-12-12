@@ -122,11 +122,10 @@ def buscar_cliente():
     # Modificamos la consulta para obtener el primer cliente registrado
     query = "SELECT id_cliente, nombres, apellidos,cedula, ruc, vehiculo FROM cliente where cedula = %s;"  
     cursor.execute(query,(cedula,))
-    cliente = cursor.fetchone()  # Obtiene la primera fila (primer cliente)
+    cliente = cursor.fetchone() 
     cursor.close()
 
     if cliente:
-        # Devuelve los datos del primer cliente como JSON
         return jsonify({
             "id_cliente": cliente[0],
             "nombres": cliente[1],
@@ -212,14 +211,14 @@ def nuevoUsuario():
         banderaCed=False
         return jsonify({"error": "Hay usuario registrado con esa cedula."}), 404
     
-    if ruc and ruc.strip():  # Verifica si ruc no es None y no está vacío
+    if ruc and ruc.strip():  
         query = "SELECT * FROM cliente WHERE ruc = %s;"
         cursor.execute(query, (ruc,))
         ruc_usuario = cursor.fetchone()
         if ruc_usuario:
             banderaRuc = False
             return jsonify({"error": "Hay usuario registrado con ese ruc."}), 404
-
+    
     query="Select * from cliente where telefono = %s;"
     cursor.execute(query,(telefono,))
     tel_usuario = cursor.fetchone()
