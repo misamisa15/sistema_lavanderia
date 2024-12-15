@@ -12,168 +12,69 @@ mysql = MySQL(app)
 
 cursor = mysql.connection.cursor()
 
-
-@app.route('/')
-def index():
-    buttons = [
-        {'icon': 'person', 'text': 'Clientes', 'url':'/cliente.html'},
-        {'icon': 'database', 'text': 'Productos', 'url':'/productos.html'},
-        {'icon': 'file-earmark-check', 'text': 'Servicios','url':'/servicios.html'},
-        {'icon': 'file-earmark-check', 'text': 'Nueva Factura'},
-        {'icon': 'receipt', 'text': 'Comprobantes'},
-        {'icon': 'receipt-cutoff', 'text': 'Nueva Retención'},
-        {'icon': 'journal-text', 'text': 'Lista Retenciones'},
-        {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
-        {'icon': 'file-earmark-minus', 'text': 'Nota de Débito'},
-        {'icon': 'journal-album', 'text': 'Liquidación de Compras'},
-        {'icon': 'file-earmark-text', 'text': 'Proformas'},
-        {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
+@app.context_processor
+def inject_menu():
+    menu = [
+        {'text': 'Inicio', 'url': '/pagina_user.html'},
+        {'text': 'Turnos', 'url': '/turnos.html'},
+        {'text': 'Servicios', 'url': '/user_servicios.html'},
+        {'text': 'Compras', 'url': '/user_productos.html'},
+        {'text': 'Facturas', 'url': '/user_facturas.html'},
     ]
-    
-    return render_template('pagina_principal.html', buttons=buttons)
+    opciones=[
+        {'text': 'Iniciar Sesión','url':'/inicio_sesion.html'},
+        {'text': 'Registrarse','url':'/registro.html'}
+    ]
+    return dict(menu=menu,opciones=opciones)
 
-
-@app.route('/servicios.html')
-def pagser():
-    return render_template('pg_servicios.html')
-
-@app.route('/servicios', methods=['POST'])
-def buscar_servicio():
-    data = request.json 
-    nom = data.get('nombre')
-
-    cursor = mysql.connection.cursor()
-    # Modificamos la consulta para obtener el producto registrado
-    query = "SELECT id_servicio, nombre_servicio, descripcion, precio, fecha_creacion FROM servicio where nombre_servicio = %s;"  
-    cursor.execute(query,(nom,))
-    producto = cursor.fetchone()  # Obtiene la primera fila 
-    cursor.close()
-
-    if producto:
-        # Devuelve los datos del primer producto como JSON
-        return jsonify({
-            "id_servicio": producto[0],
-            "nombre": producto[1],
-            "descripcion": producto[2],
-            "precio":producto[3],
-            "fecha":producto[4]
-        })
-    else:
-        return jsonify({"error": "No hay servicio registrado"}), 404
-
-
-
-@app.route('/productos.html')
-def pagpro():
-    return render_template('pg_productos.html')
-
-@app.route('/producto', methods=['POST'])
-def buscar_producto():
-    data = request.json 
-    nom = data.get('nombre')
-
-    cursor = mysql.connection.cursor()
-    # Modificamos la consulta para obtener el producto registrado
-    query = "SELECT id_producto_inv, nombre, descripcion,stock, precio, fecha FROM producto where nombre = %s;"  
-    cursor.execute(query,(nom,))
-    producto = cursor.fetchone()  # Obtiene la primera fila 
-    cursor.close()
-
-    if producto:
-        # Devuelve los datos del primer producto como JSON
-        return jsonify({
-            "id_producto_inv": producto[0],
-            "nombre": producto[1],
-            "descripcion": producto[2],
-            "stock": producto[3],
-            "precio":producto[4],
-            "fecha":producto[5]
-        })
-    else:
-        return jsonify({"error": "No hay productos registrados"}), 404
-
-@app.route('/producto/agregar-actualizar', methods=['POST'])
-def agregar_actualizar_producto():
-    # Obtener los datos del JSON recibido
-    data = request.json
-    nom = data.get('nombre')
-    desc = data.get('descripcion')
-    stock = data.get('stock')
-    precio = data.get('precio') 
-
-    cursor = mysql.connection.cursor()
-    query = "CALL insertarProducto(%s, %s, %s, %s)"  
-    cursor.execute(query, (nom, desc, stock, precio))
-    mysql.connection.commit()  
-    cursor.close()
-    return jsonify({"message": "Producto agregado o actualizado con éxito"}), 200
-
-
-@app.route('/cliente.html')
-def pagcli():
-    return render_template('cliente.html')
-
-@app.route('/cliente', methods=['POST'])
-def buscar_cliente():
-    data = request.json 
-    cedula = data.get('cedula')
-
-    cursor = mysql.connection.cursor()
-    # Modificamos la consulta para obtener el primer cliente registrado
-    query = "SELECT id_cliente, nombres, apellidos,cedula, ruc, vehiculo FROM cliente where cedula = %s;"  
-    cursor.execute(query,(cedula,))
-    cliente = cursor.fetchone() 
-    cursor.close()
-
-    if cliente:
-        return jsonify({
-            "id_cliente": cliente[0],
-            "nombres": cliente[1],
-            "apellidos": cliente[2],
-            "cedula": cliente[3],
-            "ruc":cliente[4],
-            "vehiculo": cliente[5]
-        })
-    else:
-        return jsonify({"error": "No hay clientes registrados"}), 404
-
-
+#Logica de las interfaces de usuario
 @app.route('/pagina_user.html')
 def paguser():
-    menu = [
-        {'text': 'Inicio','url':'/pagina_user.html'},
-        {'text': 'Turnos', 'url': '/turnos.html'},
-        {'text': 'Servicios','url':'/user_servicios.html'},
-        {'text': 'Compras','url':'/user_productos.html'},
-        {'text': 'Facturas','url':'/user_facturas.html'}
-    ]
+    
     ima = [
         
         {'image': 'images/logo_lavadora.png'},
         {'image': 'images/imagen_horario_car.jpeg'},
         {'image': 'images/publi_lava.jpg'}
     ]
-    return render_template('pagina_user.html',menu=menu, ima=ima)
+    return render_template('pagina_user.html', ima=ima)
 
 
 @app.route('/turnos.html')
 def pagturnos():
-    menu = [
-        {'text': 'Inicio','url':'/pagina_user.html'},
-        {'text': 'Turnos', 'url': '/turnos.html'},
-        {'text': 'Servicios','url':'/user_servicios.html'},
-        {'text': 'Compras','url':'/user_productos.html'},
-        {'text': 'Facturas','url':'/user_facturas.html'}
-    ]
-    ima = [
-        
-        {'image': 'images/logo_lava.jpg'},
-        {'image': 'images/imagen_horario_car.jpeg'},
-        {'image': 'images/publi_lava.jpg'}
-    ]
+    return render_template('turnos.html')
 
 
-    return render_template('turnos.html',menu=menu, ima=ima)
+@app.route('/user_productos.html')
+def user_producto():
+
+    cursor = mysql.connection.cursor()
+    query="Select nombre,descripcion, precio from producto where stock > 0;"
+    cursor.execute(query)
+    productos = cursor.fetchall()      
+    cursor.close()
+
+    if productos:
+        return render_template('pg_productos_user.html', productos=productos)
+    else:
+        return jsonify({"error": "No hay productos."}), 404
+
+@app.route('/user_servicios.html', methods=['GET', 'POST'])
+def produc_servicios():
+
+    cursor = mysql.connection.cursor()
+    query="Select nombre_servicio,descripcion, precio from servicio;"
+    cursor.execute(query)
+    servicios = cursor.fetchall()      
+    cursor.close()
+
+    if servicios:
+        return render_template('pg_servicios_user.html', servicios=servicios)
+    else:
+        return jsonify({"error": "No hay servicios."}), 404
+
+
+# Registro e inicio de sesión
 
 @app.route('/registro.html')
 def registro():
@@ -267,26 +168,131 @@ def iniciarSesion():
         return jsonify({"error": "Credenciales no validas."}), 404
 
 
-@app.route('/user_servicios.html', methods=['GET', 'POST'])
-def produc_servicios():
+#Logica de las interfaces de administración
 
-    menu = [
-        {'text': 'Inicio','url':'/pagina_user.html'},
-        {'text': 'Turnos', 'url': '/turnos.html'},
-        {'text': 'Servicios','url':'/user_servicios.html'},
-        {'text': 'Compras','url':'/user_productos.html'},
-        {'text': 'Facturas','url':'/user_facturas.html'}
+@app.route('/')
+def index():
+    buttons = [
+        {'icon': 'person', 'text': 'Clientes', 'url':'/cliente.html'},
+        {'icon': 'database', 'text': 'Productos', 'url':'/productos.html'},
+        {'icon': 'file-earmark-check', 'text': 'Servicios','url':'/servicios.html'},
+        {'icon': 'file-earmark-check', 'text': 'Nueva Factura'},
+        {'icon': 'receipt', 'text': 'Comprobantes'},
+        {'icon': 'receipt-cutoff', 'text': 'Nueva Retención'},
+        {'icon': 'journal-text', 'text': 'Lista Retenciones'},
+        {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
+        {'icon': 'file-earmark-minus', 'text': 'Nota de Débito'},
+        {'icon': 'journal-album', 'text': 'Liquidación de Compras'},
+        {'icon': 'file-earmark-text', 'text': 'Proformas'},
+        {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
     ]
+    
+    return render_template('pagina_principal.html', buttons=buttons)
+
+
+
+@app.route('/cliente.html')
+def pagcli():
+    return render_template('cliente.html')
+
+@app.route('/cliente', methods=['POST'])
+def buscar_cliente():
+    data = request.json 
+    cedula = data.get('cedula')
+
     cursor = mysql.connection.cursor()
-    query="Select nombre_servicio,descripcion, precio from servicio;"
-    cursor.execute(query)
-    servicios = cursor.fetchall()      
+    # Modificamos la consulta para obtener el primer cliente registrado
+    query = "SELECT id_cliente, nombres, apellidos,cedula, ruc, vehiculo FROM cliente where cedula = %s;"  
+    cursor.execute(query,(cedula,))
+    cliente = cursor.fetchone() 
     cursor.close()
 
-    if servicios:
-        return render_template('pg_servicios_user.html', menu=menu, servicios=servicios)
+    if cliente:
+        return jsonify({
+            "id_cliente": cliente[0],
+            "nombres": cliente[1],
+            "apellidos": cliente[2],
+            "cedula": cliente[3],
+            "ruc":cliente[4],
+            "vehiculo": cliente[5]
+        })
     else:
-        return jsonify({"error": "No hay servicios."}), 404
+        return jsonify({"error": "No hay clientes registrados"}), 404
+
+
+@app.route('/productos.html')
+def pagpro():
+    return render_template('pg_productos.html')
+
+@app.route('/producto', methods=['POST'])
+def buscar_producto():
+    data = request.json 
+    nom = data.get('nombre')
+
+    cursor = mysql.connection.cursor()
+    # Modificamos la consulta para obtener el producto registrado
+    query = "SELECT id_producto_inv, nombre, descripcion,stock, precio, fecha FROM producto where nombre = %s;"  
+    cursor.execute(query,(nom,))
+    producto = cursor.fetchone()  # Obtiene la primera fila 
+    cursor.close()
+
+    if producto:
+        # Devuelve los datos del primer producto como JSON
+        return jsonify({
+            "id_producto_inv": producto[0],
+            "nombre": producto[1],
+            "descripcion": producto[2],
+            "stock": producto[3],
+            "precio":producto[4],
+            "fecha":producto[5]
+        })
+    else:
+        return jsonify({"error": "No hay productos registrados"}), 404
+
+@app.route('/producto/agregar-actualizar', methods=['POST'])
+def agregar_actualizar_producto():
+    # Obtener los datos del JSON recibido
+    data = request.json
+    nom = data.get('nombre')
+    desc = data.get('descripcion')
+    stock = data.get('stock')
+    precio = data.get('precio') 
+
+    cursor = mysql.connection.cursor()
+    query = "CALL insertarProducto(%s, %s, %s, %s)"  
+    cursor.execute(query, (nom, desc, stock, precio))
+    mysql.connection.commit()  
+    cursor.close()
+    return jsonify({"message": "Producto agregado o actualizado con éxito"}), 200
+
+
+@app.route('/servicios.html')
+def pagser():
+    return render_template('pg_servicios.html')
+
+@app.route('/servicios', methods=['POST'])
+def buscar_servicio():
+    data = request.json 
+    nom = data.get('nombre')
+
+    cursor = mysql.connection.cursor()
+    # Modificamos la consulta para obtener el producto registrado
+    query = "SELECT id_servicio, nombre_servicio, descripcion, precio, fecha_creacion FROM servicio where nombre_servicio = %s;"  
+    cursor.execute(query,(nom,))
+    producto = cursor.fetchone()  # Obtiene la primera fila 
+    cursor.close()
+
+    if producto:
+        # Devuelve los datos del primer producto como JSON
+        return jsonify({
+            "id_servicio": producto[0],
+            "nombre": producto[1],
+            "descripcion": producto[2],
+            "precio":producto[3],
+            "fecha":producto[4]
+        })
+    else:
+        return jsonify({"error": "No hay servicio registrado"}), 404
 
 @app.route('/servicioAgregar',methods=['POST'])
 def servicio_agre_act():
@@ -304,24 +310,3 @@ def servicio_agre_act():
     cursor.close()
     return jsonify({"message": "Servicio agregado con éxito"}), 200
 
-
-
-@app.route('/user_productos.html')
-def user_producto():
-    menu = [
-        {'text': 'Inicio','url':'/pagina_user.html'},
-        {'text': 'Turnos', 'url': '/turnos.html'},
-        {'text': 'Servicios','url':'/user_servicios.html'},
-        {'text': 'Compras','url':'/user_productos.html'},
-        {'text': 'Facturas','url':'/user_facturas.html'}
-    ]
-    cursor = mysql.connection.cursor()
-    query="Select nombre,descripcion, precio from producto where stock > 0;"
-    cursor.execute(query)
-    productos = cursor.fetchall()      
-    cursor.close()
-
-    if productos:
-        return render_template('pg_productos_user.html', menu=menu, productos=productos)
-    else:
-        return jsonify({"error": "No hay productos."}), 404
