@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobantes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Comprobantes</h1>
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID Comprobante</th>
+                <th>ID Turno</th>
+                <th>Fecha y Hora</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if comprobantes %}
+                {% for comprobante in comprobantes %}
+                <tr>
+                    <td>{{ comprobante.id_comprobante }}</td>
+                    <td>{{ comprobante.id_turno }}</td>
+                    <td>{{ comprobante.fecha_hora }}</td>
+                    <td>
+                        <button onclick="verDetalles('{{ comprobante.id_comprobante }}')">Ver Detalles</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="4">No hay comprobantes disponibles</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div id="detallesComprobante"></div>
+
+    <script>
+        function verDetalles(idComprobante) {
+            fetch(`/detalle_comprobante/${idComprobante}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('detallesComprobante').innerHTML = `<p class="error">${data.error}</p>`;
+                    } else {
+                        document.getElementById('detallesComprobante').innerHTML = `
+                            <div class="detalles-container">
+                                <h3>Detalles del Comprobante</h3>
+                                <p>ID Comprobante: ${data.id_comprobante}</p>
+                                <p>ID Turno: ${data.id_turno}</p>
+                                <p>Fecha y Hora: ${data.fecha_hora}</p>
+                                <button onclick="imprimirComprobante('${data.id_comprobante}')">Imprimir Comprobante</button>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('detallesComprobante').innerHTML = '<p class="error">Error al cargar los detalles</p>';
+                });
+        }
+
+        function imprimirComprobante(idComprobante) {
+            // Aquí puedes implementar la lógica para imprimir el comprobante
+            alert(`Imprimiendo comprobante ${idComprobante}`);
+        }
+    </script>
+</body>
+</html>
