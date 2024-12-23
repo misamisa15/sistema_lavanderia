@@ -5,8 +5,8 @@ db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
-   
-    
+    app.secret_key = 'grupopatito'
+
     with app.app_context():
         # Registrar rutas
         from . import routes

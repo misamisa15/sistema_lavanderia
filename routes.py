@@ -1,16 +1,20 @@
-from flask import Flask, abort, jsonify, render_template, current_app as app
+from flask import Flask, abort, jsonify, render_template, current_app as app, session
 from flask_sqlalchemy import SQLAlchemy
+from flask import url_for,redirect
 from flask import Flask,render_template, request
-from flask_mysqldb import MySQL # type: ignore
-
+from flask_mysqldb import MySQL #type: ignore
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'admin'
 app.config['MYSQL_PASSWORD'] = '1234'
 app.config['MYSQL_DB'] = 'sistema_lavanderia'
 mysql = MySQL(app)
-
 cursor = mysql.connection.cursor()
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('paguser'))
 
 @app.context_processor
 def inject_menu():
@@ -21,11 +25,21 @@ def inject_menu():
         {'text': 'Compras', 'url': '/user_productos.html'},
         {'text': 'Facturas', 'url': '/user_facturas.html'},
     ]
-    opciones=[
-        {'text': 'Iniciar Sesión','url':'/inicio_sesion.html'},
-        {'text': 'Registrarse','url':'/registro.html'}
-    ]
-    return dict(menu=menu,opciones=opciones)
+    if session.get('logged_in'):
+        opciones = [
+            {'text': 'Cerrar Sesión', 'url': '/logout'}
+        ]
+    else:
+        opciones = [
+            {'text': 'Iniciar Sesión', 'url': '/inicio_sesion.html'},
+            {'text': 'Registrarse', 'url': '/registro.html'}
+        ]
+    
+    return dict(
+        menu=menu,
+        opciones=opciones,
+        user_name=session.get('user_name')
+    )
 
 #Logica de las interfaces de usuario
 @app.route('/pagina_user.html')
@@ -138,35 +152,39 @@ def nuevoUsuario():
 
 @app.route('/inicio_sesion.html')
 def inicioSesion():
- 
     return render_template('pg_iniciosesion.html')
 
 @app.route('/inicioSesion', methods=['POST'])
 def iniciarSesion():
-    data = request.json 
+    data = request.json
     usuario = data.get('user')
-    clave= data.get('pass')
-
+    clave = data.get('pass')
+    
     cursor = mysql.connection.cursor()
-
-    query = "SELECT id_cliente, usuario_cliente, nombres, apellidos, cedula, ruc, vehiculo FROM cliente WHERE usuario_cliente = %s AND clave = %s;"  
+    query = "SELECT id_cliente, usuario_cliente, nombres, apellidos, cedula, ruc, vehiculo FROM cliente WHERE usuario_cliente = %s AND clave = %s;"
     cursor.execute(query,(usuario,clave,))
-    cliente_infor = cursor.fetchone()  # Obtiene la primera fila 
+    cliente_infor = cursor.fetchone()
     cursor.close()
-
+    
     if cliente_infor:
-        # Devuelve los datos del primer cliente como JSON
+        nombre_inicial = cliente_infor[2][0].upper() if cliente_infor[2] else ''
+        apellido_inicial = cliente_infor[3][0].upper() if cliente_infor[3] else ''
+        
+        # Guardar información en la sesión
+        session['user_id'] = cliente_infor[0]
+        session['user_name'] = f"{nombre_inicial}{apellido_inicial}"
+        session['logged_in'] = True
+        
         return jsonify({
             "id_cliente": cliente_infor[0],
             "nombres": cliente_infor[2],
             "apellidos": cliente_infor[3],
             "cedula": cliente_infor[4],
-            "ruc":cliente_infor[5],
-            "vehiculo":cliente_infor[6]
+            "ruc": cliente_infor[5],
+            "vehiculo": cliente_infor[6]
         })
     else:
         return jsonify({"error": "Credenciales no validas."}), 404
-
 
 #Logica de las interfaces de administración
 
@@ -309,4 +327,4 @@ def servicio_agre_act():
     mysql.connection.commit()  
     cursor.close()
     return jsonify({"message": "Servicio agregado con éxito"}), 200
-
+    pass
