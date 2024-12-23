@@ -134,6 +134,16 @@ CREATE TABLE IF NOT EXISTS pedido (
     total DOUBLE NOT NULL
 );
 
+-- Tabla factura_no_cliente
+CREATE TABLE IF NOT EXISTS factura_no_cliente (
+    id_factura INT AUTO_INCREMENT PRIMARY KEY,
+    nombres varchar(30) not null,
+    ci_ruc char(13) not null,
+    fecha_hora TIMESTAMP NOT NULL,
+    servicio varchar(30) not null,
+    total DOUBLE NOT NULL
+);
+
 -- Tabla proveedor
 CREATE TABLE IF NOT EXISTS proveedor (
     id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
