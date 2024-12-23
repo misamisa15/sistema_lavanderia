@@ -13,7 +13,8 @@
 			cedula CHAR(10) NOT NULL UNIQUE,
 			ruc CHAR(13),
 			telefono char(10) UNIQUE,
-			vehiculo VARCHAR(40)
+			vehiculo VARCHAR(40),
+			placa CHAR(6)
 		);
 
 		-- Tabla servicios
@@ -64,8 +65,9 @@
 		CREATE TABLE IF NOT EXISTS factura_cliente (
 			id_factura INT AUTO_INCREMENT PRIMARY KEY,
 			id_cliente INT NOT NULL,
+			placa CHAR(6),
 			id_turno INT NOT NULL,
-			fecha_hora TIMESTAMP NOT NULL,
+			fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			total DOUBLE NOT NULL,
 			CONSTRAINT fk_factura_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
 				ON DELETE CASCADE ON UPDATE CASCADE,
@@ -215,6 +217,5 @@
 
 		CALL insertarProducto("Rufles", "Papitas fritas rufles", 10, 0.50);
 		
-        
         
         

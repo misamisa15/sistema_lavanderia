@@ -4,6 +4,8 @@ from flask import Flask,render_template, request
 from flask_mysqldb import MySQL # type: ignore
 
 
+
+
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'admin'
 app.config['MYSQL_PASSWORD'] = '1234'
@@ -310,3 +312,99 @@ def servicio_agre_act():
     cursor.close()
     return jsonify({"message": "Servicio agregado con éxito"}), 200
 
+@app.route('/nueva_factura.html', methods=['GET', 'POST'])
+def nueva_factura():
+    if request.method == 'POST':
+        try:
+            # Obtener los datos del formulario
+            id_cliente = request.form['id_cliente']
+            id_turno = request.form['id_turno']
+            total = request.form['total']
+            placa = request.form['placa'] if 'placa' in request.form else None
+            
+            cur = mysql.connection.cursor()
+            
+            # Consulta con la columna placa opcional
+            if placa:
+                cur.execute("""
+                    INSERT INTO factura_cliente (id_cliente, id_turno, total, placa)
+                    VALUES (%s, %s, %s, %s)
+                """, (id_cliente, id_turno, total, placa))
+            else:
+                cur.execute("""
+                    INSERT INTO factura_cliente (id_cliente, id_turno, total)
+                    VALUES (%s, %s, %s)
+                """, (id_cliente, id_turno, total))
+            
+            mysql.connection.commit()
+            cur.close()
+            return jsonify({"message": "Factura creada exitosamente"}), 200
+
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            mysql.connection.rollback()
+            return jsonify({"error": str(e)}), 500
+    
+    return render_template('nueva_factura.html')
+    
+@app.route('/buscar_factura/<int:turno_id>', methods=['GET'])
+def buscar_factura(turno_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM factura_cliente WHERE id_turno = %s", (turno_id,))
+    factura = cur.fetchone()
+    cur.close()
+
+    if factura:
+        return jsonify({
+            "id_factura": factura[0],
+            "id_cliente": factura[1],
+            "placa": factura[2],
+            "id_turno": factura[3],
+            "fecha_hora": factura[4],
+            "total": factura[5]
+        })
+    else:
+        return jsonify({"error": "Factura no encontrada"}), 404
+
+@app.route('/comprobantes')
+def comprobantes():
+    try:
+        cur = mysql.connection.cursor()
+        # Usamos cursor.description para obtener los nombres de las columnas
+        cur.execute("""
+            SELECT c.id_comprobante, c.id_turno, c.fecha_hora 
+            FROM comprobante c 
+            ORDER BY c.fecha_hora DESC
+        """)
+        
+        # Convertimos los resultados en una lista de diccionarios
+        columns = [column[0] for column in cur.description]
+        comprobantes = []
+        for row in cur.fetchall():
+            comprobante = dict(zip(columns, row))
+            # Aseguramos que la fecha se formatee correctamente
+            if comprobante.get('fecha_hora'):
+                comprobante['fecha_hora'] = comprobante['fecha_hora'].strftime('%Y-%m-%d %H:%M:%S')
+            comprobantes.append(comprobante)
+            
+        cur.close()
+        return render_template('comprobantes.html', comprobantes=comprobantes)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return render_template('comprobantes.html', comprobantes=[], error="Error al cargar los comprobantes")
+
+@app.route('/detalle_comprobante/<int:id_comprobante>')
+def detalle_comprobante(id_comprobante):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM comprobante WHERE id_comprobante = %s", (id_comprobante,))
+    comprobante = cur.fetchone()
+    cur.close()
+
+    if comprobante:
+        return jsonify({
+            "id_comprobante": comprobante[0],
+            "id_turno": comprobante[1],
+            "fecha_hora": comprobante[2]
+        })
+    else:
+        return jsonify({"error": "Comprobante no encontrado"}), 404
