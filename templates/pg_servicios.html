@@ -9,24 +9,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
+<div class="container mt-0">
+    <div class="row">
+           <div class="col-lg-6">
             <div class="card p-4">
-                <h3 class="text-center"><i class="bi bi-search"></i> Buscar Servicio</h3>
-                <p class="text-center text-muted">Introduce el nombre del servicio para buscar su información.</p>
-                <div class="input-group mb-3">
-                    <input type="text" id="nombre_servicio" class="form-control" placeholder="Nombre del servicio">
-                    <button class="btn btn-primary" id="buscarServicio">
-                        <i class="bi bi-search"></i> Buscar
-                    </button>
-                </div>
-                <div id="resultado">
-                    <!-- Aquí se mostrarán los resultados -->
-                </div>
-            </div>
-
-            <div class="card p-4 mt-4">
                 <h3 class="text-center"><i class="bi bi-plus-circle"></i> Agregar Servicio</h3>
                 <form id="formServicio">
                     <div class="mb-3">
@@ -48,6 +34,22 @@
                 </form>
             </div>
         </div>
+        <div class="col-lg-6">
+            <div class="card p-4">
+                <h3 class="text-center"><i class="bi bi-search"></i> Buscar Servicio</h3>
+                <p class="text-center text-muted">Introduce el nombre del servicio para buscar su información.</p>
+                <div class="input-group mb-3">
+                    <input type="text" id="nombre_servicio" class="form-control" placeholder="Nombre del servicio">
+                    <button class="btn btn-primary" id="buscarServicio">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+                <div id="resultado">
+                </div>
+            </div>
+        </div>
+
+     
     </div>
 </div>
 
@@ -138,7 +140,6 @@
         })
         .then(data => {
             alert('Servicio guardado correctamente.');
-            // Limpiar el formulario después de guardar
             document.getElementById("formServicio").reset();
         })
         .catch(error => {

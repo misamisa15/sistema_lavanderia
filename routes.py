@@ -2,10 +2,7 @@ from flask import Flask, abort, jsonify, render_template, current_app as app, se
 from flask_sqlalchemy import SQLAlchemy
 from flask import url_for,redirect
 from flask import Flask,render_template, request
-from flask_mysqldb import MySQL # type: ignore
-
-
-
+from flask_mysqldb import MySQL
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'admin'
@@ -71,10 +68,8 @@ def user_producto():
     productos = cursor.fetchall()      
     cursor.close()
 
-    if productos:
-        return render_template('pg_productos_user.html', productos=productos)
-    else:
-        return jsonify({"error": "No hay productos."}), 404
+    return render_template('pg_productos_user.html', productos=productos)
+    
 
 @app.route('/user_servicios.html', methods=['GET', 'POST'])
 def produc_servicios():
@@ -85,10 +80,7 @@ def produc_servicios():
     servicios = cursor.fetchall()      
     cursor.close()
 
-    if servicios:
-        return render_template('pg_servicios_user.html', servicios=servicios)
-    else:
-        return jsonify({"error": "No hay servicios."}), 404
+    return render_template('pg_servicios_user.html', servicios=servicios)
 
 
 # Registro e inicio de sesión
@@ -202,8 +194,8 @@ def index():
         {'icon': 'receipt-cutoff', 'text': 'Nueva Retención'},
         {'icon': 'journal-text', 'text': 'Lista Retenciones'},
         {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
-        {'icon': 'file-earmark-minus', 'text': 'Nota de Débito'},
-        {'icon': 'journal-album', 'text': 'Liquidación de Compras'},
+        {'icon': 'file-earmark-minus', 'text': 'Administrar Pedidos','url':'/pedidos.html'},
+        {'icon': 'journal-text', 'text': 'Ver Pedidos', 'url':'/ver_pedidos.html'},
         {'icon': 'file-earmark-text', 'text': 'Proformas'},
         {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
     ]
@@ -211,7 +203,76 @@ def index():
     return render_template('pagina_principal.html', buttons=buttons)
 
 
+@app.route('/ver_pedidos.html', methods=['GET', 'POST'])
+def verpedidos():
+    cursor=mysql.connection.cursor()
+    query="Select id_pedido,nombre,descripcion,total, fecha, estado from pedido where estado='pendiente';"
+    cursor.execute(query)
+    pendientes=cursor.fetchall()
+    query="Select id_pedido,nombre,descripcion,total, fecha, estado from pedido where estado='completado';"
+    cursor.execute(query)
+    completados=cursor.fetchall()
+    cursor.close()
+    return render_template('pg_ver_pedidos.html', pedidos_pendientes=pendientes,pedidos_completados=completados)
 
+@app.route('/pedidos.html')
+def generarPedido():
+
+    return render_template('pg_pedidos.html')
+
+@app.route('/pedido', methods =['POST'])
+def registrarpedido():
+    data =request.json
+    nombre=data.get('nombre')
+    descripcion=data.get('descripcion')
+    valor=data.get('precio')
+
+    cursor=mysql.connection.cursor()
+    query="INSERT INTO pedido (id_admin,nombre,descripcion,total,estado) values (1,%s,%s,%s, 'pendiente');"
+    cursor.execute(query,(nombre,descripcion,valor))
+    mysql.connection.commit()
+    cursor.close()
+    return jsonify({"message": "Pedido agregado con éxito"}), 200
+
+@app.route('/pedidoBuscar',methods=['POST'])
+def buscarpedido():
+    data=request.json
+    nombre=data.get('nombre')
+    cursor=mysql.connection.cursor()
+    query="SELECT id_pedido,nombre, descripcion,total,fecha,estado from pedido where nombre=%s;"
+    cursor.execute(query,(nombre,))
+    pedido=cursor.fetchone()
+    cursor.close()
+
+    if pedido:
+        return jsonify({
+            "id_pedido":pedido[0],
+            "nombre":pedido[1],
+            "descripcion":pedido[2],
+            "total":pedido[3],
+            "fecha":pedido[4],
+            "estado":pedido[5]
+        })
+
+@app.route('/eliminarPedido/<int:id_pedido>', methods=['DELETE'])
+def eliminar_pedido(id_pedido):
+    cursor = mysql.connection.cursor()
+    query = "DELETE FROM pedido WHERE id_pedido = %s"
+    cursor.execute(query, (id_pedido,))
+    mysql.connection.commit()
+    cursor.close()
+    return jsonify({"mensaje": "Pedido eliminado correctamente"}), 200
+
+@app.route('/completarPedido/<int:id_pedido>', methods=['PUT'])
+def completar_pedido(id_pedido):
+    cursor = mysql.connection.cursor()
+    query = "UPDATE pedido SET estado = 'completado' WHERE id_pedido = %s"
+    cursor.execute(query, (id_pedido,))
+    mysql.connection.commit()
+    cursor.close()
+    return jsonify({"mensaje": "Pedido marcado como completado"}), 200
+    
+        
 @app.route('/cliente.html')
 def pagcli():
     return render_template('cliente.html')
@@ -237,8 +298,7 @@ def buscar_cliente():
             "ruc":cliente[4],
             "vehiculo": cliente[5]
         })
-    else:
-        return jsonify({"error": "No hay clientes registrados"}), 404
+    
 
 
 @app.route('/productos.html')
@@ -251,14 +311,12 @@ def buscar_producto():
     nom = data.get('nombre')
 
     cursor = mysql.connection.cursor()
-    # Modificamos la consulta para obtener el producto registrado
     query = "SELECT id_producto_inv, nombre, descripcion,stock, precio, fecha FROM producto where nombre = %s;"  
     cursor.execute(query,(nom,))
-    producto = cursor.fetchone()  # Obtiene la primera fila 
+    producto = cursor.fetchone()  
     cursor.close()
 
     if producto:
-        # Devuelve los datos del primer producto como JSON
         return jsonify({
             "id_producto_inv": producto[0],
             "nombre": producto[1],
@@ -272,7 +330,6 @@ def buscar_producto():
 
 @app.route('/producto/agregar-actualizar', methods=['POST'])
 def agregar_actualizar_producto():
-    # Obtener los datos del JSON recibido
     data = request.json
     nom = data.get('nombre')
     desc = data.get('descripcion')
@@ -297,14 +354,13 @@ def buscar_servicio():
     nom = data.get('nombre')
 
     cursor = mysql.connection.cursor()
-    # Modificamos la consulta para obtener el producto registrado
+ 
     query = "SELECT id_servicio, nombre_servicio, descripcion, precio, fecha_creacion FROM servicio where nombre_servicio = %s;"  
     cursor.execute(query,(nom,))
-    producto = cursor.fetchone()  # Obtiene la primera fila 
+    producto = cursor.fetchone() 
     cursor.close()
 
     if producto:
-        # Devuelve los datos del primer producto como JSON
         return jsonify({
             "id_servicio": producto[0],
             "nombre": producto[1],
@@ -331,6 +387,7 @@ def servicio_agre_act():
     cursor.close()
     return jsonify({"message": "Servicio agregado con éxito"}), 200
 
+
 @app.route('/nueva_factura.html', methods=['GET', 'POST'])
 def nueva_factura():
     if request.method == 'POST':
@@ -339,7 +396,7 @@ def nueva_factura():
             id_cliente = request.form['id_cliente']
             id_turno = request.form['id_turno']
             total = request.form['total']
-            placa = request.form['placa'] if 'placa' in request.form else None
+            placa = request.form['placa'] 
             
             cur = mysql.connection.cursor()
             
