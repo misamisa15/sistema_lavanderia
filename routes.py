@@ -4,7 +4,7 @@ from flask import Flask,render_template, request
 from flask_mysqldb import MySQL # type: ignore
 
 
-app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_HOST'] = 'db'
 app.config['MYSQL_USER'] = 'admin'
 app.config['MYSQL_PASSWORD'] = '1234'
 app.config['MYSQL_DB'] = 'sistema_lavanderia'
