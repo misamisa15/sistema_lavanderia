@@ -4,7 +4,7 @@ from flask import url_for,redirect
 from flask import Flask,render_template, request
 from flask_mysqldb import MySQL
 
-app.config['MYSQL_HOST'] = 'db'
+app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'admin'
 app.config['MYSQL_PASSWORD'] = '1234'
 app.config['MYSQL_DB'] = 'sistema_lavanderia'
@@ -56,8 +56,37 @@ def paguser():
 
 @app.route('/turnos.html')
 def pagturnos():
-    return render_template('turnos.html')
+    cursor=mysql.connection.cursor()
+    query="Select nombre_servicio from servicio;"
+    cursor.execute(query)
+    servicios=cursor.fetchall()
+    return render_template('turnos.html',servicios=servicios)
 
+@app.route('/turnoAgregar', methods=['POST'])
+def agregar_turno():
+    data = request.json
+    id_cliente = session.get('user_id')
+    servicio = data.get('servicio')
+    fecha = data.get('fecha')
+    hora = data.get('hora')
+    
+    fechahora = f"{fecha} {hora}"  
+    
+    cursor = mysql.connection.cursor()
+    query_check = "SELECT COUNT(*) FROM turno WHERE fecha_hora = %s;"
+    cursor.execute(query_check, (fechahora,))
+    count = cursor.fetchone()[0]
+    
+    if count >= 3:
+        cursor.close()
+        return jsonify({"error": "No se puede agendar el turno. Ya hay 3 turnos registrados en esa fecha y hora."}), 400
+    
+    query_insert = "INSERT INTO turno (id_cliente, tipo_servicio, fecha_hora) VALUES (%s, %s, %s);"
+    cursor.execute(query_insert, (id_cliente, servicio, fechahora))
+    mysql.connection.commit()
+    cursor.close()
+    
+    return jsonify({"message": "Turno registrado con éxito."}), 200
 
 @app.route('/user_productos.html')
 def user_producto():
@@ -167,6 +196,7 @@ def iniciarSesion():
         
         # Guardar información en la sesión
         session['user_id'] = cliente_infor[0]
+        session['user_cedula']=cliente_infor[4]
         session['user_name'] = f"{nombre_inicial}{apellido_inicial}"
         session['logged_in'] = True
         
@@ -191,7 +221,7 @@ def index():
         {'icon': 'file-earmark-check', 'text': 'Servicios','url':'/servicios.html'},
         {'icon': 'file-earmark-check', 'text': 'Nueva Factura'},
         {'icon': 'receipt', 'text': 'Comprobantes'},
-        {'icon': 'receipt-cutoff', 'text': 'Nueva Retención'},
+        {'icon': 'receipt-cutoff', 'text': 'Ver turnos próximos','url':'/pg_turnos.html'},
         {'icon': 'journal-text', 'text': 'Lista Retenciones'},
         {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
         {'icon': 'file-earmark-minus', 'text': 'Administrar Pedidos','url':'/pedidos.html'},
@@ -202,6 +232,14 @@ def index():
     
     return render_template('pagina_principal.html', buttons=buttons)
 
+@app.route('/pg_turnos.html')
+def verTurnos():
+    cursor=mysql.connection.cursor()
+    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE()  order by tur.fecha_hora asc;"
+    cursor.execute(query)
+    turnos=cursor.fetchall()
+    cursor.close()
+    return render_template('pg_turnos.html',turnos=turnos)
 
 @app.route('/ver_pedidos.html', methods=['GET', 'POST'])
 def verpedidos():
