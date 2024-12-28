@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS cliente (
 -- Tabla servicios
 CREATE TABLE IF NOT EXISTS servicio(
     id_servicio int AUTO_INCREMENT primary key,
-    nombre_servicio varchar(20) not null,
+    nombre_servicio varchar(20) not null UNIQUE,
     descripcion varchar(30),
     precio double not null,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS turno (
     id_cliente INT NOT NULL,
     tipo_servicio int not null,
     fecha_hora TIMESTAMP NOT NULL,
+    estado ENUM('pendiente','completado'),
     CONSTRAINT fk_turn_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_turn_servicio FOREIGN KEY(tipo_servicio) REFERENCES servicio (id_servicio)
@@ -59,19 +60,28 @@ CREATE TABLE IF NOT EXISTS cuenta_por_cobrar (
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-		-- Tabla factura_cliente
-		CREATE TABLE IF NOT EXISTS factura_cliente (
-			id_factura INT AUTO_INCREMENT PRIMARY KEY,
-			id_cliente INT NOT NULL,
-			placa CHAR(6),
-			id_turno INT NOT NULL,
-			fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			total DOUBLE NOT NULL,
-			CONSTRAINT fk_factura_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
-				ON DELETE CASCADE ON UPDATE CASCADE,
-			CONSTRAINT fk_factura_turno FOREIGN KEY (id_turno) REFERENCES turno (id_turno) 
-				ON DELETE CASCADE ON UPDATE CASCADE
-		);
+-- Tabla factura_cliente
+CREATE TABLE IF NOT EXISTS factura_cliente (
+    id_factura INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    placa char(6),
+    id_turno INT NOT NULL,
+    fecha_hora TIMESTAMP NOT NULL,
+    total DOUBLE NOT NULL,
+    CONSTRAINT fk_factura_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_factura_turno FOREIGN KEY (id_turno) REFERENCES turno (id_turno) 
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+-- Tabla factura_no_cliente
+CREATE TABLE IF NOT EXISTS factura_no_cliente (
+    id_factura INT AUTO_INCREMENT PRIMARY KEY,
+    nombres varchar(30) not null,
+    ci_ruc char(13) not null,
+    fecha_hora TIMESTAMP NOT NULL,
+    servicio varchar(30) not null,
+    total DOUBLE NOT NULL
+);
 
 -- Tabla producto
 CREATE TABLE IF NOT EXISTS producto (
@@ -130,6 +140,8 @@ CREATE TABLE IF NOT EXISTS administrador (
 -- Tabla pedido
 CREATE TABLE IF NOT EXISTS pedido (
     id_pedido INT AUTO_INCREMENT PRIMARY KEY,
+    id_admin int not null,
+    nombre varchar(20) not null,
     descripcion VARCHAR(50) NOT NULL,
     total DOUBLE NOT NULL
 );
@@ -162,14 +174,15 @@ CREATE TABLE IF NOT EXISTS factura_proveedor (
     id_admin INT NOT NULL,
     codigo_factura CHAR(20) NOT NULL,
     total DOUBLE NOT NULL,
-    CONSTRAINT fk_facprov_pedido FOREIGN KEY (id_pedido) REFERENCES pedido (id_pedido) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_facprov_admin FOREIGN KEY (id_admin) REFERENCES administrador (id_admin) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_facprov_proveedor FOREIGN KEY (id_proveedor) REFERENCES proveedor (id_proveedor) 
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM ('pendiente','completado'),
+    CONSTRAINT fk_admin_pedido FOREIGN KEY (id_admin) REFERENCES administrador (id_admin)
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+
+
+DECLARE DELIMITER //
 -- Procedimiento insertarProducto
 CREATE PROCEDURE insertarProducto(
     IN p_nombre VARCHAR(30), 
@@ -217,5 +230,13 @@ BEGIN
     VALUES (NEW.id_producto_inv, NEW.nombre, NEW.descripcion, NEW.stock, NEW.precio, 'ACTUALIZACION', NOW());
 END;
 
--- Llamada al procedimiento de inserción
-CALL insertarProducto("Rufles", "Papitas fritas rufles", 10, 0.50);
+
+
+-- Insert for trabajador
+INSERT INTO trabajador (nombres, apellidos, cedula, contrato, fecha_contrato, salario)
+VALUES ('Alcivar', 'Jostyn', '1234567890', '1', '2024-12-26', 500.00);
+
+-- Insert for administrador
+INSERT INTO administrador (id_trabajador, clave) 
+VALUES (1, 'admin123');
+

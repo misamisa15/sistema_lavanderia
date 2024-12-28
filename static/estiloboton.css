@@ -18,3 +18,9 @@ a.btn.volver:hover {
 a.btn.volver:active {
     background-color: #FF0000; 
 }
+
+
+button.btn.botonTurno{
+    align-items: center; 
+    margin-bottom: 20px;
+}

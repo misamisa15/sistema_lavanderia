@@ -8,6 +8,5 @@ def create_app():
     app.secret_key = 'grupopatito'
 
     with app.app_context():
-        # Registrar rutas
         from . import routes
         return app
