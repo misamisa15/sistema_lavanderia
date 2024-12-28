@@ -81,7 +81,7 @@ def agregar_turno():
         cursor.close()
         return jsonify({"error": "No se puede agendar el turno. Ya hay 3 turnos registrados en esa fecha y hora."}), 400
     
-    query_insert = "INSERT INTO turno (id_cliente, tipo_servicio, fecha_hora) VALUES (%s, %s, %s);"
+    query_insert = "INSERT INTO turno (id_cliente, tipo_servicio, fecha_hora,estado) VALUES (%s, %s, %s,'pendiente');"
     cursor.execute(query_insert, (id_cliente, servicio, fechahora))
     mysql.connection.commit()
     cursor.close()
@@ -235,7 +235,7 @@ def index():
 @app.route('/pg_turnos.html')
 def verTurnos():
     cursor=mysql.connection.cursor()
-    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE()  order by tur.fecha_hora asc;"
+    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente'  order by tur.fecha_hora asc;"
     cursor.execute(query)
     turnos=cursor.fetchall()
     cursor.close()

@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS turno (
     id_cliente INT NOT NULL,
     tipo_servicio int not null,
     fecha_hora TIMESTAMP NOT NULL,
+    estado ENUM('pendiente','completado'),
     CONSTRAINT fk_turn_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_turn_servicio FOREIGN KEY(tipo_servicio) REFERENCES servicio (id_servicio)
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS cuenta_por_cobrar (
 CREATE TABLE IF NOT EXISTS factura_cliente (
     id_factura INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL,
+    placa char(6),
     id_turno INT NOT NULL,
     fecha_hora TIMESTAMP NOT NULL,
     total DOUBLE NOT NULL,
