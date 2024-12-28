@@ -1,8 +1,9 @@
-from flask import Flask, abort, jsonify, render_template, current_app as app, session
+from flask import Flask, abort, jsonify, render_template, current_app as app, session, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask import url_for,redirect
 from flask import Flask,render_template, request
-from flask_mysqldb import MySQL # type: ignore
+from flask_mysqldb import MySQL 
+from datetime import datetime
 
 
 
@@ -331,28 +332,66 @@ def servicio_agre_act():
     cursor.close()
     return jsonify({"message": "Servicio agregado con éxito"}), 200
 
-@app.route('/factura_no_cliente', methods=['POST'])
-def factura_no_cliente():
+@app.route('/factura', methods=['GET'])
+def mostrar_formulario():
+    # Consultar el próximo número de factura dinámicamente
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT IFNULL(MAX(id_factura), 0) + 1 AS siguiente_factura FROM factura_no_cliente")
+    resultado = cursor.fetchone()
+    siguiente_factura = resultado[0] if resultado else 1  # Si no hay datos, iniciar en 1
+    return render_template('factura.html', id_factura=siguiente_factura)
+
+# Ruta para generar la factura
+@app.route('/generar-factura', methods=['POST'])
+def generar_factura():
     # Obtener los datos del formulario
-    nombres = request.form.get('nombres')
-    apellidos = request.form.get('apellidos')
-    ci_ruc = request.form.get('cedula')  # Cambio: 'cedula' por 'ci_ruc'
-    telefono = request.form.get('telefono')  # Opcional
-    servicio = request.form.get('servicio')
-    total = request.form.get('total')
-    
-    # Insertar los datos en la tabla factura_no_cliente
+    id_factura = request.form.get('id_factura')
+    nombres = request.form['nombres']
+    ci_ruc = request.form['ci_ruc']
+    fecha_hora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Fecha y hora actual
+    servicio = request.form['servicio']
+    total = request.form['total']
+
+    # Guardar los datos en la base de datos
+    cursor = mysql.connection.cursor()
     query = """
-    INSERT INTO factura_no_cliente (nombres, ci_ruc, fecha_hora, servicio, total)
-    VALUES (%s, %s, CURRENT_TIMESTAMP, %s, %s)
+        INSERT INTO factura_no_cliente (id_factura, nombres, ci_ruc, fecha_hora, servicio, total)
+        VALUES (%s, %s, %s, %s, %s, %s)
     """
-    values = (nombres, ci_ruc, servicio, total)
+    cursor.execute(query, (id_factura, nombres, ci_ruc, fecha_hora, servicio, total))
+    mysql.connection.commit()
+
+    # Renderizar la página con los datos generados
+    return render_template(
+        'factura_generada.html',
+        id_factura=id_factura,
+        nombres=nombres,
+        ci_ruc=ci_ruc,
+        fecha_hora=fecha_hora,
+        servicio=servicio,
+        total=total
+    )
     
-    try:
-        cursor = mysql.connection.cursor()
-        cursor.execute(query, values)
-        mysql.connection.commit()
-        cursor.close()
-        return render_template('factura_no_cliente.html', success_message="Factura generada exitosamente")
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+@app.route('/comprobantes', methods=['GET'])
+def ver_comprobantes():
+    # Consultar todas las facturas en la base de datos
+    cursor = mysql.connection.cursor()
+    query = "SELECT id_factura, nombres, ci_ruc, fecha_hora, servicio, total FROM factura_no_cliente"
+    cursor.execute(query)
+    facturas = cursor.fetchall()  # Recupera todas las filas como lista de tuplas
+
+    # Convertir las filas a una estructura más legible si es necesario
+    facturas_lista = [
+        {
+            "id_factura": factura[0],
+            "nombres": factura[1],
+            "ci_ruc": factura[2],
+            "fecha_hora": factura[3],
+            "servicio": factura[4],
+            "total": factura[5]
+        }
+        for factura in facturas
+    ]
+
+    # Renderizar la plantilla con los datos de las facturas
+    return render_template('comprobantes.html', facturas=facturas_lista)

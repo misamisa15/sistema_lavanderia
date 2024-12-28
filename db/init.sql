@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS factura_no_cliente (
     total DOUBLE NOT NULL
 );
 
+
 -- Tabla proveedor
 CREATE TABLE IF NOT EXISTS proveedor (
     id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
