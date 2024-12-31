@@ -2,7 +2,7 @@ from flask import Flask, abort, jsonify, render_template, current_app as app, se
 from flask_sqlalchemy import SQLAlchemy
 from flask import url_for,redirect
 from flask import Flask,render_template, request
-from flask_mysqldb import MySQL 
+from flask_mysqldb import MySQL     
 from datetime import datetime
 from flask_mysqldb import MySQL
 
@@ -25,8 +25,8 @@ def inject_menu():
         {'text': 'Inicio', 'url': '/pagina_user.html'},
         {'text': 'Turnos', 'url': '/turnos.html'},
         {'text': 'Servicios', 'url': '/user_servicios.html'},
-        {'text': 'Compras', 'url': '/user_productos.html'},
-        {'text': 'Facturas', 'url': '/user_facturas.html'},
+        {'text': 'Productos', 'url': '/user_productos.html'},
+        {'text': 'Carrito', 'url': '/user_carrito.html'},
     ]
     if session.get('logged_in'):
         opciones = [
@@ -45,6 +45,54 @@ def inject_menu():
     )
 
 #Logica de las interfaces de usuario
+@app.route('/user_carrito.html')
+def carrito():
+    cursor = mysql.connection.cursor()
+    query="Select nombre, precio,stock,id_producto_inv from producto where stock > 0;"
+    cursor.execute(query)
+    productos = cursor.fetchall()   
+    query="Select nombre_servicio,precio,id_servicio from servicio;"
+    cursor.execute(query)
+    servicios=cursor.fetchall()   
+
+    return render_template('pg_carrito.html',productos=productos,servicios=servicios)
+
+#lógica para guardar el carrito en la bd 
+@app.route('/carrito_guardar',methods=['POST'])
+def guardarCarrito():
+    data=request.json
+    productos = data.get('productos', [])
+    servicio = data.get('servicios', [0])
+    id_cliente = session.get('user_id')
+
+
+    cursor = mysql.connection.cursor()
+
+    if servicio:
+        query="INSERT INTO carrito (id_cliente,id_servicio) values (%s,%s);"
+        cursor.execute(query,(id_cliente,servicio))
+        mysql.connection.commit()
+
+    else:    
+        query="INSERT INTO carrito (id_cliente) values (%s);"
+        cursor.execute(query,('1'))
+        mysql.connection.commit()
+
+
+    query=("Select id_carrito from carrito order by id_carrito desc limit 1;")
+    cursor.execute(query)
+    id_carrito=cursor.fetchone()
+
+    if productos:
+        for producto in productos:
+            query_producto = "INSERT INTO carrito_items (id_carrito, id_producto, cantidad) VALUES (%s, %s, %s);"
+            cursor.execute(query_producto, (id_carrito, producto['producto_id'], producto['cantidad']))
+            query="UPDATE producto set stock=stock - %s where id_producto_inv = %s;"
+            cursor.execute(query,(producto['cantidad'],producto['producto_id']))
+    mysql.connection.commit()
+
+    return jsonify({"message": "Carrito guardado correctamente"}), 200
+
 @app.route('/pagina_user.html')
 def paguser():
     
@@ -197,7 +245,6 @@ def iniciarSesion():
         nombre_inicial = cliente_infor[2][0].upper() if cliente_infor[2] else ''
         apellido_inicial = cliente_infor[3][0].upper() if cliente_infor[3] else ''
         
-        # Guardar información en la sesión
         session['user_id'] = cliente_infor[0]
         session['user_cedula']=cliente_infor[4]
         session['user_name'] = f"{nombre_inicial}{apellido_inicial}"
@@ -222,18 +269,44 @@ def index():
         {'icon': 'person', 'text': 'Clientes', 'url':'/cliente.html'},
         {'icon': 'database', 'text': 'Productos', 'url':'/productos.html'},
         {'icon': 'file-earmark-check', 'text': 'Servicios','url':'/servicios.html'},
-        {'icon': 'file-earmark-check', 'text': 'Nueva Factura'},
-        {'icon': 'receipt', 'text': 'Comprobantes'},
+        {'icon': 'file-earmark-check', 'text': 'Nueva Factura','url':'/factura.html'},
+        {'icon': 'receipt', 'text': 'Comprobantes','url':'/comprobantes.html'},
         {'icon': 'receipt-cutoff', 'text': 'Ver turnos próximos','url':'/pg_turnos.html'},
         {'icon': 'journal-text', 'text': 'Lista Retenciones'},
         {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
         {'icon': 'file-earmark-minus', 'text': 'Administrar Pedidos','url':'/pedidos.html'},
         {'icon': 'journal-text', 'text': 'Ver Pedidos', 'url':'/ver_pedidos.html'},
-        {'icon': 'file-earmark-text', 'text': 'Proformas'},
+        {'icon': 'file-earmark-text', 'text': 'Proformas','url':'/ver_proformas.html'},
         {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
     ]
     
     return render_template('pagina_principal.html', buttons=buttons)
+
+@app.route('/ver_proformas.html')
+def ver_proformas():
+    cursor=mysql.connection.cursor()
+    query="""Select cr.id_carrito, cl.nombres, cl.apellidos, cl.cedula,cr.fecha_hora, 
+    sum(cr_i.cantidad* pr.precio) as total from carrito as cr 
+    inner join cliente as cl on cl.id_cliente=cr.id_cliente
+    inner join carrito_items as cr_i on cr_i.id_carrito=cr.id_carrito
+    inner join producto as pr on pr.id_producto_inv=cr_i.id_producto 
+    where estado='pendiente' 
+    group by cr.id_carrito,cl.cedula
+    ;"""
+    
+    cursor.execute(query)
+    carritos=cursor.fetchall()
+    cursor.close()
+    return render_template('pg_proformas.html',carritos=carritos)
+
+@app.route('/eliminarCarrito/<int:id_carrito>', methods=['DELETE'])
+def eliminar_carrito(id_carrito):
+    cursor = mysql.connection.cursor()
+    query = "DELETE FROM carrito WHERE id_carrito = %s"
+    cursor.execute(query, (id_carrito,))
+    mysql.connection.commit()
+    cursor.close()
+    return jsonify({"mensaje": "Carrito eliminado correctamente"}), 200
 
 @app.route('/pg_turnos.html')
 def verTurnos():
@@ -243,6 +316,16 @@ def verTurnos():
     turnos=cursor.fetchall()
     cursor.close()
     return render_template('pg_turnos.html',turnos=turnos)
+
+
+@app.route('/eliminarTurno/<int:id_turno>', methods=['DELETE'])
+def eliminar_turno(id_turno):
+    cursor = mysql.connection.cursor()
+    query = "DELETE FROM turno WHERE id_turno = %s"
+    cursor.execute(query, (id_turno,))
+    mysql.connection.commit()
+    cursor.close()
+    return jsonify({"mensaje": "Turno eliminado correctamente"}), 200
 
 @app.route('/ver_pedidos.html', methods=['GET', 'POST'])
 def verpedidos():
@@ -428,14 +511,16 @@ def servicio_agre_act():
     cursor.close()
     return jsonify({"message": "Servicio agregado con éxito"}), 200
 
-@app.route('/factura', methods=['GET'])
+@app.route('/factura.html', methods=['GET'])
 def mostrar_formulario():
-    # Consultar el próximo número de factura dinámicamente
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT IFNULL(MAX(id_factura), 0) + 1 AS siguiente_factura FROM factura_no_cliente")
+    cursor.execute("SELECT id_factura FROM factura_no_cliente order by id_factura desc")
     resultado = cursor.fetchone()
-    siguiente_factura = resultado[0] if resultado else 1  # Si no hay datos, iniciar en 1
-    return render_template('factura.html', id_factura=siguiente_factura)
+    siguiente_factura = resultado[0]+1 if resultado else 1  
+    query="Select nombre_servicio from servicio;"
+    cursor.execute(query)
+    servicios=cursor.fetchall()
+    return render_template('factura.html', id_factura=siguiente_factura,servicios=servicios)
 
 # Ruta para generar la factura
 @app.route('/generar-factura', methods=['POST'])
@@ -444,18 +529,20 @@ def generar_factura():
     id_factura = request.form.get('id_factura')
     nombres = request.form['nombres']
     ci_ruc = request.form['ci_ruc']
-    fecha_hora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Fecha y hora actual
     servicio = request.form['servicio']
     total = request.form['total']
-
-    # Guardar los datos en la base de datos
     cursor = mysql.connection.cursor()
-    query = """
-        INSERT INTO factura_no_cliente (id_factura, nombres, ci_ruc, fecha_hora, servicio, total)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """
-    cursor.execute(query, (id_factura, nombres, ci_ruc, fecha_hora, servicio, total))
+    query = "INSERT INTO factura_no_cliente (id_factura, nombres, ci_ruc, servicio, total) VALUES (%s, %s, %s, %s, %s);"
+    cursor.execute(query, (id_factura, nombres, ci_ruc, servicio, total))
+    
     mysql.connection.commit()
+    
+    query="SELECT fecha_hora from factura_no_cliente where id_factura=%s;"
+
+    cursor.execute(query,(id_factura,))
+
+    fecha_hora=cursor.fetchone()[0]
+    fecha_hora = fecha_hora.strftime("%Y-%m-%d %H:%M:%S")
 
     # Renderizar la página con los datos generados
     return render_template(
@@ -468,7 +555,7 @@ def generar_factura():
         total=total
     )
     
-@app.route('/comprobantes', methods=['GET'])
+@app.route('/comprobantes.html', methods=['GET'])
 def ver_comprobantes():
     # Consultar todas las facturas en la base de datos
     cursor = mysql.connection.cursor()

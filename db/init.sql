@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS cliente (
 CREATE TABLE IF NOT EXISTS servicio(
     id_servicio int AUTO_INCREMENT primary key,
     nombre_servicio varchar(20) not null UNIQUE,
-    descripcion varchar(30),
+    descripcion varchar(50),
     precio double not null,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS cuenta_por_cobrar (
 CREATE TABLE IF NOT EXISTS factura_cliente (
     id_factura INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL,
+    id_carrito INT,
     placa char(6),
     id_turno INT NOT NULL,
     fecha_hora TIMESTAMP NOT NULL,
@@ -76,9 +77,9 @@ CREATE TABLE IF NOT EXISTS factura_cliente (
 -- Tabla factura_no_cliente
 CREATE TABLE IF NOT EXISTS factura_no_cliente (
     id_factura INT AUTO_INCREMENT PRIMARY KEY,
-    nombres varchar(30) not null,
+    nombres varchar(30) not null,m
     ci_ruc char(13) not null,
-    fecha_hora TIMESTAMP NOT NULL,
+    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     servicio varchar(30) not null,
     total DOUBLE NOT NULL
 );
@@ -93,6 +94,28 @@ CREATE TABLE IF NOT EXISTS producto (
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS carrito(
+    id_carrito INT  AUTO_INCREMENT PRIMARY KEY,
+    id_cliente int not null,
+    id_servicio int,
+    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('pendiente','pagado') DEFAULT 'pendiente',
+    CONSTRAINT fk_carrito_cliente FOREIGN KEY(id_cliente) REFERENCES cliente(id_cliente) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_carrito_servicio FOREIGN KEY (id_servicio) REFERENCES servicio(id_servicio)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS carrito_items(
+    id_car_pro int AUTO_INCREMENT PRIMARY KEY,
+    id_carrito int not null,
+    id_producto int not null,
+    cantidad int not null,
+    CONSTRAINT fk_item_carrito FOREIGN KEY(id_carrito) REFERENCES carrito(id_carrito)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_item_producto FOREIGN KEY(id_producto) REFERENCES producto(id_producto_inv)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
 -- Crear la tabla historial_producto
 CREATE TABLE IF NOT EXISTS historial_producto (
     id_historial INT AUTO_INCREMENT PRIMARY KEY,
@@ -143,7 +166,11 @@ CREATE TABLE IF NOT EXISTS pedido (
     id_admin int not null,
     nombre varchar(20) not null,
     descripcion VARCHAR(50) NOT NULL,
-    total DOUBLE NOT NULL
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total DOUBLE NOT NULL,
+    estado ENUM ('pendiente','completado'),
+    CONSTRAINT fk_pedido_admin FOREIGN KEY(id_admin) REFERENCES administrador(id_admin)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Tabla factura_no_cliente
@@ -151,39 +178,16 @@ CREATE TABLE IF NOT EXISTS factura_no_cliente (
     id_factura INT AUTO_INCREMENT PRIMARY KEY,
     nombres varchar(30) not null,
     ci_ruc char(13) not null,
-    fecha_hora TIMESTAMP NOT NULL,
+    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     servicio varchar(30) not null,
     total DOUBLE NOT NULL
 );
 
 
--- Tabla proveedor
-CREATE TABLE IF NOT EXISTS proveedor (
-    id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
-    nombres VARCHAR(20) NOT NULL,
-    apellidos VARCHAR(20) NOT NULL,
-    ruc CHAR(13) NOT NULL,
-    empresa VARCHAR(20) NOT NULL
-);
 
--- Tabla factura_proveedor
-CREATE TABLE IF NOT EXISTS factura_proveedor (
-    id_fac_prov INT AUTO_INCREMENT PRIMARY KEY,
-    id_proveedor INT NOT NULL,
-    id_pedido INT NOT NULL,
-    id_admin INT NOT NULL,
-    codigo_factura CHAR(20) NOT NULL,
-    total DOUBLE NOT NULL,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado ENUM ('pendiente','completado'),
-    CONSTRAINT fk_admin_pedido FOREIGN KEY (id_admin) REFERENCES administrador (id_admin)
-        ON DELETE CASCADE ON UPDATE CASCADE
-);
+DELIMITER //
 
-
-
-DECLARE DELIMITER //
--- Procedimiento insertarProducto
+-- Procedimiento para insertar o actualizar un producto
 CREATE PROCEDURE insertarProducto(
     IN p_nombre VARCHAR(30), 
     IN p_descripcion VARCHAR(50), 
@@ -196,39 +200,48 @@ BEGIN
     -- Verificar si el producto ya existe
     SELECT id_producto_inv INTO v_producto_id 
     FROM producto 
-    WHERE nombre = p_nombre;
+    WHERE nombre = p_nombre 
+    LIMIT 1;
 
     IF v_producto_id IS NOT NULL THEN
         -- Si el producto existe, actualizar el stock
         UPDATE producto 
-        SET stock = stock + p_stock 
+        SET stock = stock + p_stock, precio = p_precio 
         WHERE id_producto_inv = v_producto_id;
     ELSE
         -- Si el producto no existe, insertarlo
         INSERT INTO producto(nombre, descripcion, stock, precio) 
         VALUES (p_nombre, p_descripcion, p_stock, p_precio);
     END IF;
-END;
+END //
 
--- Trigger para registrar cambios al insertar un producto
+DELIMITER ;
+
+-- Trigger para registrar inserciones de productos
+DELIMITER //
+
 CREATE TRIGGER registrar_cambios_producto
 AFTER INSERT ON producto
 FOR EACH ROW
 BEGIN
-    -- Registrar la inserción de un nuevo producto en la tabla historial
     INSERT INTO historial_producto(id_producto, nombre, descripcion, stock, precio, accion, fecha)
     VALUES (NEW.id_producto_inv, NEW.nombre, NEW.descripcion, NEW.stock, NEW.precio, 'INSERCION', NOW());
-END;
+END //
 
--- Trigger para registrar cambios al actualizar un producto
+DELIMITER ;
+
+-- Trigger para registrar actualizaciones de productos
+DELIMITER //
+
 CREATE TRIGGER registrar_cambios_producto_actualizacion
 AFTER UPDATE ON producto
 FOR EACH ROW
 BEGIN
-    -- Registrar la actualización del producto en la tabla historial
     INSERT INTO historial_producto(id_producto, nombre, descripcion, stock, precio, accion, fecha)
     VALUES (NEW.id_producto_inv, NEW.nombre, NEW.descripcion, NEW.stock, NEW.precio, 'ACTUALIZACION', NOW());
-END;
+END //
+
+DELIMITER ;
 
 
 
@@ -239,4 +252,24 @@ VALUES ('Alcivar', 'Jostyn', '1234567890', '1', '2024-12-26', 500.00);
 -- Insert for administrador
 INSERT INTO administrador (id_trabajador, clave) 
 VALUES (1, 'admin123');
+
+INSERT INTO cliente(usuario_cliente,clave,nombres,apellidos,cedula,telefono,vehiculo) 
+values ("ja13","2511","Jostyn","Alcivar","1250532478","0991442782","moto");
+
+INSERT INTO servicio (nombre_servicio, descripcion, precio) VALUES 
+('Lavado Exterior', 'Lavado básico de la carrocería', 150.00),
+('Lavado Interior', 'Limpieza completa del interior del auto', 200.00),
+('Lavado Completo', 'Limpieza exterior e interior', 300.00),
+('Pulido de Carrocería', 'Pulido y abrillantado de pintura', 400.00),
+('Lavado de Motor', 'Limpieza segura del motor', 350.00);
+
+INSERT INTO producto (nombre, descripcion, stock, precio) VALUES 
+('Papas Fritas', 'Snack de papas fritas en bolsa', 100, 10.00),
+('Cola Regular', 'Refresco sabor cola 500ml', 50, 15.00),
+('Cola Light', 'Refresco sabor cola sin azúcar 500ml', 50, 15.00),
+('Cerveza Regular', 'Cerveza clásica 355ml', 30, 20.00),
+('Cerveza Artesanal', 'Cerveza artesanal premium 355ml', 20, 35.00),
+('Agua Embotellada', 'Agua pura 500ml', 80, 8.00),
+('Chocolates', 'Barra de chocolate 50g', 60, 12.00),
+('Galletas', 'Paquete de galletas surtidas', 70, 10.00);
 

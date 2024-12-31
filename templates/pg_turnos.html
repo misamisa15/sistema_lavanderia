@@ -22,9 +22,10 @@ Turnos Próximos
                                 <p class="card-text"><strong>Id del turno:</strong> {{ turno[0] }}</p>
                             </div>
                             <div class="d-flex justify-content-around mt-4 ">
-                                    <button class="btn btn-danger botonTurno" onclick="">
+                                <button class="btn btn-danger botonTurno" onclick="eliminarPedido('{{ turno[0] }}')">
                                     <i class="bi bi-trash"></i> Eliminar Turno
                                 </button>
+                                
                                 <button class="btn btn-success botonTurno" onclick="">
                                     <i class="bi bi-check-circle"></i> Facturar Turno
                                 </button>
@@ -53,6 +54,25 @@ Turnos Próximos
 
 
 <script>
+function eliminarPedido(id_pedido) {
+    if (!confirm('¿Está seguro de eliminar este turno?')) return;
+    
+    fetch(`/eliminarTurno/${id_pedido}`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Error al eliminar el turno');
+        return response.json();
+    })
+    .then(data => {
+        alert('Turno eliminado correctamente');
+        document.getElementById('resultado').innerHTML = '';
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+
 
 </script>
 {%endblock%}
