@@ -269,15 +269,15 @@ def index():
         {'icon': 'person', 'text': 'Clientes', 'url':'/cliente.html'},
         {'icon': 'database', 'text': 'Productos', 'url':'/productos.html'},
         {'icon': 'file-earmark-check', 'text': 'Servicios','url':'/servicios.html'},
+        {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
         {'icon': 'file-earmark-check', 'text': 'Nueva Factura','url':'/factura.html'},
-        {'icon': 'receipt', 'text': 'Comprobantes','url':'/comprobantes.html'},
         {'icon': 'receipt-cutoff', 'text': 'Ver turnos próximos','url':'/pg_turnos.html'},
-        {'icon': 'journal-text', 'text': 'Lista Retenciones'},
-        {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
+        {'icon': 'file-earmark-text', 'text': 'Proformas','url':'/ver_proformas.html'},
+        {'icon': 'receipt', 'text': 'Comprobantes','url':'/comprobantes.html'},
         {'icon': 'file-earmark-minus', 'text': 'Administrar Pedidos','url':'/pedidos.html'},
         {'icon': 'journal-text', 'text': 'Ver Pedidos', 'url':'/ver_pedidos.html'},
-        {'icon': 'file-earmark-text', 'text': 'Proformas','url':'/ver_proformas.html'},
-        {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
+        {'icon': 'journal-text', 'text': 'Lista Retenciones'},
+        {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
     ]
     
     return render_template('pagina_principal.html', buttons=buttons)
