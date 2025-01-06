@@ -143,6 +143,36 @@ CREATE TABLE IF NOT EXISTS pedido (
     id_admin int not null,
     nombre varchar(20) not null,
     descripcion VARCHAR(50) NOT NULL,
+    total DOUBLE NOT NULL
+);
+
+-- Tabla factura_no_cliente
+CREATE TABLE IF NOT EXISTS factura_no_cliente (
+    id_factura INT AUTO_INCREMENT PRIMARY KEY,
+    nombres varchar(30) not null,
+    ci_ruc char(13) not null,
+    fecha_hora TIMESTAMP NOT NULL,
+    servicio varchar(30) not null,
+    total DOUBLE NOT NULL
+);
+
+
+-- Tabla proveedor
+CREATE TABLE IF NOT EXISTS proveedor (
+    id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
+    nombres VARCHAR(20) NOT NULL,
+    apellidos VARCHAR(20) NOT NULL,
+    ruc CHAR(13) NOT NULL,
+    empresa VARCHAR(20) NOT NULL
+);
+
+-- Tabla factura_proveedor
+CREATE TABLE IF NOT EXISTS factura_proveedor (
+    id_fac_prov INT AUTO_INCREMENT PRIMARY KEY,
+    id_proveedor INT NOT NULL,
+    id_pedido INT NOT NULL,
+    id_admin INT NOT NULL,
+    codigo_factura CHAR(20) NOT NULL,
     total DOUBLE NOT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado ENUM ('pendiente','completado'),

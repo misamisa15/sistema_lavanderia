@@ -1,8 +1,11 @@
-from flask import Flask, abort, jsonify, render_template, current_app as app, session
+from flask import Flask, abort, jsonify, render_template, current_app as app, session, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask import url_for,redirect
 from flask import Flask,render_template, request
+from flask_mysqldb import MySQL 
+from datetime import datetime
 from flask_mysqldb import MySQL
+
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'admin'
@@ -425,100 +428,91 @@ def servicio_agre_act():
     cursor.close()
     return jsonify({"message": "Servicio agregado con éxito"}), 200
 
+@app.route('/factura', methods=['GET'])
+def mostrar_formulario():
+    # Consultar el próximo número de factura dinámicamente
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT IFNULL(MAX(id_factura), 0) + 1 AS siguiente_factura FROM factura_no_cliente")
+    resultado = cursor.fetchone()
+    siguiente_factura = resultado[0] if resultado else 1  # Si no hay datos, iniciar en 1
+    return render_template('factura.html', id_factura=siguiente_factura)
 
-@app.route('/nueva_factura.html', methods=['GET', 'POST'])
-def nueva_factura():
-    if request.method == 'POST':
-        try:
-            # Obtener los datos del formulario
-            id_cliente = request.form['id_cliente']
-            id_turno = request.form['id_turno']
-            total = request.form['total']
-            placa = request.form['placa'] 
-            
-            cur = mysql.connection.cursor()
-            
-            # Consulta con la columna placa opcional
-            if placa:
-                cur.execute("""
-                    INSERT INTO factura_cliente (id_cliente, id_turno, total, placa)
-                    VALUES (%s, %s, %s, %s)
-                """, (id_cliente, id_turno, total, placa))
-            else:
-                cur.execute("""
-                    INSERT INTO factura_cliente (id_cliente, id_turno, total)
-                    VALUES (%s, %s, %s)
-                """, (id_cliente, id_turno, total))
-            
-            mysql.connection.commit()
-            cur.close()
-            return jsonify({"message": "Factura creada exitosamente"}), 200
+# Ruta para generar la factura
+@app.route('/generar-factura', methods=['POST'])
+def generar_factura():
+    # Obtener los datos del formulario
+    id_factura = request.form.get('id_factura')
+    nombres = request.form['nombres']
+    ci_ruc = request.form['ci_ruc']
+    fecha_hora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Fecha y hora actual
+    servicio = request.form['servicio']
+    total = request.form['total']
 
-        except Exception as e:
-            print(f"Error: {str(e)}")
-            mysql.connection.rollback()
-            return jsonify({"error": str(e)}), 500
+    # Guardar los datos en la base de datos
+    cursor = mysql.connection.cursor()
+    query = """
+        INSERT INTO factura_no_cliente (id_factura, nombres, ci_ruc, fecha_hora, servicio, total)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    cursor.execute(query, (id_factura, nombres, ci_ruc, fecha_hora, servicio, total))
+    mysql.connection.commit()
+
+    # Renderizar la página con los datos generados
+    return render_template(
+        'factura_generada.html',
+        id_factura=id_factura,
+        nombres=nombres,
+        ci_ruc=ci_ruc,
+        fecha_hora=fecha_hora,
+        servicio=servicio,
+        total=total
+    )
     
-    return render_template('nueva_factura.html')
-    
-@app.route('/buscar_factura/<int:turno_id>', methods=['GET'])
-def buscar_factura(turno_id):
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM factura_cliente WHERE id_turno = %s", (turno_id,))
-    factura = cur.fetchone()
-    cur.close()
+@app.route('/comprobantes', methods=['GET'])
+def ver_comprobantes():
+    # Consultar todas las facturas en la base de datos
+    cursor = mysql.connection.cursor()
+    query = "SELECT id_factura, nombres, ci_ruc, fecha_hora, servicio, total FROM factura_no_cliente"
+    cursor.execute(query)
+    facturas = cursor.fetchall()  # Recupera todas las filas como lista de tuplas
 
-    if factura:
-        return jsonify({
+    # Convertir las filas a una estructura más legible si es necesario
+    facturas_lista = [
+        {
             "id_factura": factura[0],
-            "id_cliente": factura[1],
-            "placa": factura[2],
-            "id_turno": factura[3],
-            "fecha_hora": factura[4],
+            "nombres": factura[1],
+            "ci_ruc": factura[2],
+            "fecha_hora": factura[3],
+            "servicio": factura[4],
             "total": factura[5]
-        })
-    else:
-        return jsonify({"error": "Factura no encontrada"}), 404
+        }
+        for factura in facturas
+    ]
 
-@app.route('/comprobantes')
-def comprobantes():
-    try:
-        cur = mysql.connection.cursor()
-        # Usamos cursor.description para obtener los nombres de las columnas
-        cur.execute("""
-            SELECT c.id_comprobante, c.id_turno, c.fecha_hora 
-            FROM comprobante c 
-            ORDER BY c.fecha_hora DESC
-        """)
-        
-        # Convertimos los resultados en una lista de diccionarios
-        columns = [column[0] for column in cur.description]
-        comprobantes = []
-        for row in cur.fetchall():
-            comprobante = dict(zip(columns, row))
-            # Aseguramos que la fecha se formatee correctamente
-            if comprobante.get('fecha_hora'):
-                comprobante['fecha_hora'] = comprobante['fecha_hora'].strftime('%Y-%m-%d %H:%M:%S')
-            comprobantes.append(comprobante)
-            
-        cur.close()
-        return render_template('comprobantes.html', comprobantes=comprobantes)
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return render_template('comprobantes.html', comprobantes=[], error="Error al cargar los comprobantes")
+    # Renderizar la plantilla con los datos de las facturas
+    return render_template('comprobantes.html', facturas=facturas_lista)
 
-@app.route('/detalle_comprobante/<int:id_comprobante>')
-def detalle_comprobante(id_comprobante):
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM comprobante WHERE id_comprobante = %s", (id_comprobante,))
-    comprobante = cur.fetchone()
-    cur.close()
+@app.route('/imprimir/<int:id_factura>', methods=['GET'])
+def imprimir_factura(id_factura):
+    # Consultar la factura específica por ID
+    cursor = mysql.connection.cursor()
+    query = "SELECT id_factura, nombres, ci_ruc, fecha_hora, servicio, total FROM factura_no_cliente WHERE id_factura = %s"
+    cursor.execute(query, (id_factura,))
+    factura = cursor.fetchone()
 
-    if comprobante:
-        return jsonify({
-            "id_comprobante": comprobante[0],
-            "id_turno": comprobante[1],
-            "fecha_hora": comprobante[2]
-        })
-    else:
-        return jsonify({"error": "Comprobante no encontrado"}), 404
+    # Verificar si la factura existe
+    if not factura:
+        return "Factura no encontrada", 404
+
+    # Convertir la factura en un diccionario para facilitar el uso
+    factura_dict = {
+        "id_factura": factura[0],
+        "nombres": factura[1],
+        "ci_ruc": factura[2],
+        "fecha_hora": factura[3],
+        "servicio": factura[4],
+        "total": factura[5]
+    }
+
+    # Renderizar la plantilla imprimible
+    return render_template('imprimir_factura.html', factura=factura_dict)
