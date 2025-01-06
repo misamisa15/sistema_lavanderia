@@ -491,3 +491,28 @@ def ver_comprobantes():
 
     # Renderizar la plantilla con los datos de las facturas
     return render_template('comprobantes.html', facturas=facturas_lista)
+
+@app.route('/imprimir/<int:id_factura>', methods=['GET'])
+def imprimir_factura(id_factura):
+    # Consultar la factura específica por ID
+    cursor = mysql.connection.cursor()
+    query = "SELECT id_factura, nombres, ci_ruc, fecha_hora, servicio, total FROM factura_no_cliente WHERE id_factura = %s"
+    cursor.execute(query, (id_factura,))
+    factura = cursor.fetchone()
+
+    # Verificar si la factura existe
+    if not factura:
+        return "Factura no encontrada", 404
+
+    # Convertir la factura en un diccionario para facilitar el uso
+    factura_dict = {
+        "id_factura": factura[0],
+        "nombres": factura[1],
+        "ci_ruc": factura[2],
+        "fecha_hora": factura[3],
+        "servicio": factura[4],
+        "total": factura[5]
+    }
+
+    # Renderizar la plantilla imprimible
+    return render_template('imprimir_factura.html', factura=factura_dict)
