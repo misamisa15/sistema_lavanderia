@@ -22,7 +22,7 @@ def inject_menu():
         {'text': 'Inicio', 'url': '/pagina_user.html'},
         {'text': 'Turnos', 'url': '/turnos.html'},
         {'text': 'Servicios', 'url': '/user_servicios.html'},
-        {'text': 'Compras', 'url': '/user_productos.html'},
+        {'text': 'Productos', 'url': '/user_productos.html'},
         {'text': 'Facturas', 'url': '/user_facturas.html'},
     ]
     if session.get('logged_in'):
