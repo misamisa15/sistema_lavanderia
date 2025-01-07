@@ -261,50 +261,50 @@
             actualizarCarrito();
         }
 
+
         function enviarCarrito() {
-            if(userId){
-            const productosParaEnviar = carrito.filter(item => !item.esServicio).map(item => ({
-                producto_id: item.id,
-                cantidad: item.cantidad
-            }));
+    if (!userId) {
+        alert("Inicia sesión para guardar el carrito.");
+        return;
+    }
 
-            const serviciosParaEnviar = carrito.filter(item => item.esServicio).map(item => ({
-                servicio_id: item.id
-            }));
+    const productosParaEnviar = carrito.filter(item => !item.esServicio).map(item => ({
+        producto_id: item.id,
+        cantidad: item.cantidad
+    }));
 
-            const datosParaEnviar = {
-                productos: productosParaEnviar,
-                servicios: serviciosParaEnviar
-            };}
-            else{
-                alert("Inicia sesión para guardar el carrito.")
-            }
-            
+    const serviciosParaEnviar = carrito.filter(item => item.esServicio).map(item => ({
+        servicio_id: item.id
+    }));
 
-            
-            fetch('/carrito_guardar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(datosParaEnviar)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error al guardar el carrito');
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert('Carrito guardado correctamente');
-                carrito = [];
-                servicioEnCarrito = false;
-                actualizarCarrito();
-            })
-            .catch(error => {
-                alert('Error al guardar el carrito: ' + error.message);
-            });
+    const datosParaEnviar = {
+        productos: productosParaEnviar,
+        servicios: serviciosParaEnviar
+    };
+
+    fetch('/carrito_guardar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(datosParaEnviar)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error al guardar el carrito');
         }
+        return response.json();
+    })
+    .then(data => {
+        alert('Carrito guardado correctamente');
+        carrito = [];
+        servicioEnCarrito = false;
+        actualizarCarrito();
+    })
+    .catch(error => {
+        alert('Error al guardar el carrito: ' + error.message);
+    });
+}
     });
 </script>
 {% endblock %}
