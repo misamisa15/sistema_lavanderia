@@ -641,5 +641,4 @@ def imprimir_factura(id_factura):
         "total": factura[5]
     }
 
-    # Renderizar la plantilla imprimible
     return render_template('imprimir_factura.html', factura=factura_dict)
