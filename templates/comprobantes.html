@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-
+{%block title %}
+ Comprobantes
+{%endblock%}
 {% block content %}
 <div class="container mt-5">
     <h2 class="text-center">Comprobantes Generados</h2>
@@ -13,6 +15,7 @@
                     <th>Fecha y Hora</th>
                     <th>Servicio</th>
                     <th>Total</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -24,6 +27,9 @@
                     <td>{{ factura.fecha_hora }}</td>
                     <td>{{ factura.servicio }}</td>
                     <td>${{ factura.total }}</td>
+                    <td>
+                        <a href="/imprimir/{{ factura.id_factura }}" class="btn btn-primary btn-sm" target="_blank">Imprimir</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
