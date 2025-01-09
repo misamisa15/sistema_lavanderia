@@ -62,17 +62,16 @@ def carrito():
 def guardarCarrito():
     data=request.json
     productos = data.get('productos', [])
-    servicio = data.get('servicios', [0])
+    servicio_data = data.get('servicios', [{'servicio_id': 0}]) 
+    servicio = servicio_data[0].get('servicio_id', 0)
+
     id_cliente = session.get('user_id')
-
-
     cursor = mysql.connection.cursor()
 
     if servicio:
         query="INSERT INTO carrito (id_cliente,id_servicio) values (%s,%s);"
         cursor.execute(query,(id_cliente,servicio))
         mysql.connection.commit()
-
     else:    
         query="INSERT INTO carrito (id_cliente) values (%s);"
         cursor.execute(query,('1'))
@@ -276,11 +275,35 @@ def index():
         {'icon': 'receipt', 'text': 'Comprobantes','url':'/comprobantes.html'},
         {'icon': 'file-earmark-minus', 'text': 'Administrar Pedidos','url':'/pedidos.html'},
         {'icon': 'journal-text', 'text': 'Ver Pedidos', 'url':'/ver_pedidos.html'},
-        {'icon': 'journal-text', 'text': 'Lista Retenciones'},
+        {'icon': 'journal-text', 'text': 'Trabajadores','url':'/trabajadores.html'},
         {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
     ]
     
     return render_template('pagina_principal.html', buttons=buttons)
+
+@app.route('/trabajadores.html')
+def pg_trabajadores():
+    cursor= mysql.connection.cursor()
+    query="Select id_trabajador,nombres,apellidos,cedula, contrato, fecha_contrato, salario from trabajador;"
+    cursor.execute(query)
+    trabajadores=cursor.fetchall()
+    return render_template('pg_trabajadores.html',trabajadores=trabajadores)
+
+@app.route('/newTrabajador', methods=['POST'])
+def nuevoTrabajador():
+    data=request.json
+    nombres=data.get('nombres')
+    apellidos=data.get('apellidos')
+    cedula=data.get('cedula')
+    contrato=data.get('contrato')
+    fecha=data.get('fecha')
+    salario=data.get('salario')
+    cursor=mysql.connection.cursor()
+    query="INSERT INTO trabajador(nombres,apellidos,cedula,contrato, fecha_contrato, salario) values (%s,%s,%s,%s,%s,%s);"
+    cursor.execute(query,(nombres,apellidos,cedula,contrato,fecha,salario))
+    mysql.commit()
+    cursor.close()
+    return jsonify({"mensaje": "Trabajador agregado con éxito."}), 200
 
 @app.route('/ver_proformas.html')
 def ver_proformas():
@@ -293,7 +316,6 @@ def ver_proformas():
     where estado='pendiente' 
     group by cr.id_carrito,cl.cedula
     ;"""
-    
     cursor.execute(query)
     carritos=cursor.fetchall()
     cursor.close()
@@ -619,5 +641,4 @@ def imprimir_factura(id_factura):
         "total": factura[5]
     }
 
-    # Renderizar la plantilla imprimible
     return render_template('imprimir_factura.html', factura=factura_dict)
