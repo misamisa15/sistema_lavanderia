@@ -112,6 +112,8 @@ def pagturnos():
     servicios=cursor.fetchall()
     return render_template('turnos.html',servicios=servicios)
 
+
+#AQUIIIII ESTO SE BORRA Y VA PAL CARRITO
 @app.route('/turnoAgregar', methods=['POST'])
 def agregar_turno():
     data = request.json
@@ -339,12 +341,37 @@ def verTurnos():
     cursor.close()
     return render_template('pg_turnos.html',turnos=turnos)
 
+@app.route('/facturarTurno/<int:id_turno>', methods=['POST'])
+def completar_turno(id_turno):
+    cursor = mysql.connection.cursor()
+    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente' and tur.id_turno= %s order by tur.fecha_hora asc Limit 1 ;"
+    cursor.execute(query, (id_turno,))
+    turnoCompleto=cursor.fetchone()
+    #query = "UPDATE turno SET estado = 'completado' WHERE id_turno = %s"
+    #cursor.execute(query, (id_turno,))
+   # mysql.connection.commit()
+    query="INSERT INTO factura (id_cliente, id_turno, fecha_hora, total) VALUES (%s, %s, %s, %s);"
+    cursor.close()
+    
+
+    # Renderizar la página con los datos generados
+    return render_template(
+        'factura_generada.html',
+        id_factura=turnoCompleto[0],
+        nombres=turnoCompleto[1]+" "+turnoCompleto[2],
+        ci_ruc=turnoCompleto[3],
+        fecha_hora=turnoCompleto[6].strftime('%Y-%m-%d %H:%M:%S'),
+
+        servicio=turnoCompleto[4],
+        total=turnoCompleto[5]
+    )
+
 @app.route('/turnoBuscar',methods=['POST'])
 def buscarTurno():
     data=request.json
     cedula=data.get('cedula')
     cursor=mysql.connection.cursor()
-    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente' and cedula=%s order by tur.fecha_hora asc Limit 1 ;"
+    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente' and cedula= %s order by tur.fecha_hora asc Limit 1 ;"
     cursor.execute(query,(cedula,)) 
     turno=cursor.fetchone()
     cursor.close()
