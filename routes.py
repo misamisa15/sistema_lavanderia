@@ -62,20 +62,16 @@ def carrito():
 def guardarCarrito():
     data=request.json
     productos = data.get('productos', [])
-    servicio_data = data.get('servicios', [{'servicio_id': 0}]) 
-    servicio = servicio_data[0].get('servicio_id', 0)
-
+    servicios = data.get('servicios', []) 
+    fecha_hora = data.get('fecha_hora')
+    
     id_cliente = session.get('user_id')
     cursor = mysql.connection.cursor()
 
-    if servicio:
-        query="INSERT INTO carrito (id_cliente,id_servicio) values (%s,%s);"
-        cursor.execute(query,(id_cliente,servicio))
-        mysql.connection.commit()
-    else:    
-        query="INSERT INTO carrito (id_cliente) values (%s);"
-        cursor.execute(query,('1'))
-        mysql.connection.commit()
+     
+    query="INSERT INTO carrito (id_cliente, fecha_hora) values (%s);"
+    cursor.execute(query,(id_cliente,fecha_hora))
+    mysql.connection.commit()
 
 
     query=("Select id_carrito from carrito order by id_carrito desc limit 1;")
@@ -88,6 +84,10 @@ def guardarCarrito():
             cursor.execute(query_producto, (id_carrito, producto['producto_id'], producto['cantidad']))
             query="UPDATE producto set stock=stock - %s where id_producto_inv = %s;"
             cursor.execute(query,(producto['cantidad'],producto['producto_id']))
+    if servicios:
+        for servicio in servicios:
+            query_servicio = "INSERT INTO carrito_items (id_carrito, id_servicio, cantidad) VALUES (%s, %s, %s);"
+            cursor.execute(query_servicio, (id_carrito, servicio['servicio_id'], 1))
     mysql.connection.commit()
 
     return jsonify({"message": "Carrito guardado correctamente"}), 200
