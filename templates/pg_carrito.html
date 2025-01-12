@@ -147,7 +147,7 @@
               </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-success">
+              <button type="submit" id="EnviarTodo" class="btn btn-success">
                 {% if session.user_cedula %}
                 Confirmar Turno
                 {% else %}
@@ -175,9 +175,12 @@
         const errorStock = document.getElementById('errorStock');
         let productoTemporal = null;
         let carrito = [];
-        const fec = document.getElementById('fecha').value;
-        const hora = document.getElementById('hora').value;
+        const fec = document.getElementById('fecha');
+        const hora = document.getElementById('hora');
         const userId = document.getElementById('userData')?.dataset.userId;
+        const botonConfirmarTurno = document.getElementById("EnviarTodo");
+        const modalTurno = document.getElementById("appointmentModal");
+
 
         document.querySelectorAll('.agregar-producto').forEach(boton => {
             boton.addEventListener('click', () => {
@@ -305,7 +308,7 @@
         `;
                     document.getElementById("btnEnviar").addEventListener("click", enviarCarrito);
               
-    
+                
         } else {
     document.getElementById("enviarCarrito").innerHTML = '';
 }
@@ -318,51 +321,62 @@
         }
 
 
-        function enviarCarrito() {
-    if (!userId) {
-        alert("Inicia sesión para guardar el carrito.");
-        return;
-    }
+        botonConfirmarTurno.addEventListener("click", (event) => {
+        event.preventDefault(); // Evitar el envío del formulario por defecto
 
-    const productosParaEnviar = carrito.filter(item => !item.esServicio).map(item => ({
-        producto_id: item.id,
-        cantidad: item.cantidad
-    }));
+        const fecha = fec.value;
+        const horaSeleccionada = hora.value;
 
-    const serviciosParaEnviar = carrito.filter(item => item.esServicio).map(item => ({
-        servicio_id: item.id
-    }));
-
-    const datosParaEnviar = {
-        productos: productosParaEnviar,
-        servicios: serviciosParaEnviar
-    };
-
-    fetch('/carrito_guardar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(datosParaEnviar,
-        fecha=fec,
-    hora=hora) //COLOCAR VARIABLE DE FECHA Y HORA
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Error al guardar el carrito');
+        if (!fecha || !horaSeleccionada) {
+            alert("Por favor, selecciona una fecha y hora para agendar.");
+            return;
         }
-        return response.json();
-    })
-    .then(data => {
-        alert('Carrito guardado correctamente');
-        carrito = [];
-        servicioEnCarrito = false;
-        actualizarCarrito();
-    })
-    .catch(error => {
-        alert('Error al guardar el carrito: ' + error.message);
+
+        if (!userId) {
+            alert("Inicia sesión para guardar el carrito.");
+            return;
+        }
+
+        const productosParaEnviar = carrito.filter(item => !item.esServicio).map(item => ({
+            producto_id: item.id,
+            cantidad: item.cantidad
+        }));
+
+        const serviciosParaEnviar = carrito.filter(item => item.esServicio).map(item => ({
+            servicio_id: item.id
+        }));
+
+        const datosParaEnviar = {
+            productos: productosParaEnviar,
+            servicios: serviciosParaEnviar,
+            fecha: fecha,
+            hora: horaSeleccionada
+        };
+
+        fetch('/carrito_guardar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datosParaEnviar)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al guardar el carrito');
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('Carrito guardado correctamente');
+            carrito = [];
+            actualizarCarrito();
+            const bootstrapModal = bootstrap.Modal.getInstance(modalTurno);
+            bootstrapModal.hide(); // Cerrar el modal al guardar exitosamente
+        })
+        .catch(error => {
+            alert('Error al guardar el carrito: ' + error.message);
+        });
     });
-}
     });
 
 

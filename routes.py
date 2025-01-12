@@ -63,14 +63,15 @@ def guardarCarrito():
     data=request.json
     productos = data.get('productos', [])
     servicios = data.get('servicios', []) 
-    fecha_hora = data.get('fecha_hora')
-    
+    fecha=data.get('fecha')
+    hora=data.get('hora')
+    fechahora = f"{fecha} {hora}"      
     id_cliente = session.get('user_id')
     cursor = mysql.connection.cursor()
 
      
-    query="INSERT INTO carrito (id_cliente, fecha_hora) values (%s);"
-    cursor.execute(query,(id_cliente,fecha_hora))
+    query="INSERT INTO carrito (id_cliente, fecha_hora) values (%s,%s);"
+    cursor.execute(query,(id_cliente,fechahora))
     mysql.connection.commit()
 
 
@@ -311,11 +312,15 @@ def nuevoTrabajador():
 def ver_proformas():
     cursor=mysql.connection.cursor()
     query="""Select cr.id_carrito, cl.nombres, cl.apellidos, cl.cedula,cr.fecha_hora, 
-    sum(cr_i.cantidad* pr.precio) as total from carrito as cr 
-    inner join cliente as cl on cl.id_cliente=cr.id_cliente
-    inner join carrito_items as cr_i on cr_i.id_carrito=cr.id_carrito
-    inner join producto as pr on pr.id_producto_inv=cr_i.id_producto 
-    where estado='pendiente' 
+      SUM(
+        COALESCE(cr_i.cantidad * pr.precio, 0) + 
+        COALESCE(cr_i.cantidad * ser.precio, 0)
+    ) AS total  from carrito as cr 
+    INNER JOIN cliente AS cl ON cl.id_cliente = cr.id_cliente
+LEFT JOIN carrito_items AS cr_i ON cr_i.id_carrito = cr.id_carrito
+LEFT JOIN producto AS pr ON pr.id_producto_inv = cr_i.id_producto
+LEFT JOIN servicio AS ser ON ser.id_servicio = cr_i.id_servicio
+WHERE cr.estado = 'pendiente' 
     group by cr.id_carrito,cl.cedula
     ;"""
     cursor.execute(query)
