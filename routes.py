@@ -23,7 +23,6 @@ def logout():
 def inject_menu():
     menu = [
         {'text': 'Inicio', 'url': '/'},
-        {'text': 'Turnos', 'url': '/turnos.html'},
         {'text': 'Servicios', 'url': '/user_servicios.html'},
         {'text': 'Productos', 'url': '/user_productos.html'},
         {'text': 'Carrito', 'url': '/user_carrito.html'},
@@ -103,43 +102,6 @@ def paguser():
         {'image': 'images/publi_lava.jpg'}
     ]
     return render_template('pagina_user.html', ima=ima)
-
-
-@app.route('/turnos.html')
-def pagturnos():
-    cursor=mysql.connection.cursor()
-    query="Select nombre_servicio from servicio;"
-    cursor.execute(query)
-    servicios=cursor.fetchall()
-    return render_template('turnos.html',servicios=servicios)
-
-
-#AQUIIIII ESTO SE BORRA Y VA PAL CARRITO
-@app.route('/turnoAgregar', methods=['POST'])
-def agregar_turno():
-    data = request.json
-    id_cliente = session.get('user_id')
-    servicio = data.get('servicio')
-    fecha = data.get('fecha')
-    hora = data.get('hora')
-    
-    fechahora = f"{fecha} {hora}"  
-    
-    cursor = mysql.connection.cursor()
-    query_check = "SELECT COUNT(*) FROM turno WHERE fecha_hora = %s;"
-    cursor.execute(query_check, (fechahora,))
-    count = cursor.fetchone()[0]
-    
-    if count >= 3:
-        cursor.close()
-        return jsonify({"error": "No se puede agendar el turno. Ya hay 3 turnos registrados en esa fecha y hora."}), 400
-    
-    query_insert = "INSERT INTO turno (id_cliente, tipo_servicio, fecha_hora,estado) VALUES (%s, %s, %s,'pendiente');"
-    cursor.execute(query_insert, (id_cliente, servicio, fechahora))
-    mysql.connection.commit()
-    cursor.close()
-    
-    return jsonify({"message": "Turno registrado con éxito."}), 200
 
 @app.route('/user_productos.html')
 def user_producto():
@@ -273,13 +235,11 @@ def index():
         {'icon': 'file-earmark-check', 'text': 'Servicios','url':'/servicios.html'},
         {'icon': 'cash-stack', 'text': 'Cuentas por Cobrar'},
         {'icon': 'file-earmark-check', 'text': 'Nueva Factura','url':'/factura.html'},
-        {'icon': 'receipt-cutoff', 'text': 'Ver turnos próximos','url':'/pg_turnos.html'},
         {'icon': 'file-earmark-text', 'text': 'Proformas','url':'/ver_proformas.html'},
         {'icon': 'receipt', 'text': 'Comprobantes','url':'/comprobantes.html'},
+        {'icon': 'journal-text', 'text': 'Trabajadores','url':'/trabajadores.html'},
         {'icon': 'file-earmark-minus', 'text': 'Administrar Pedidos','url':'/pedidos.html'},
         {'icon': 'journal-text', 'text': 'Ver Pedidos', 'url':'/ver_pedidos.html'},
-        {'icon': 'journal-text', 'text': 'Trabajadores','url':'/trabajadores.html'},
-        {'icon': 'arrow-clockwise', 'text': 'Nota de Crédito'},
     ]
     
     return render_template('pagina_principal.html', buttons=buttons)
@@ -310,23 +270,46 @@ def nuevoTrabajador():
 
 @app.route('/ver_proformas.html')
 def ver_proformas():
-    cursor=mysql.connection.cursor()
-    query="""Select cr.id_carrito, cl.nombres, cl.apellidos, cl.cedula,cr.fecha_hora, 
-      SUM(
-        COALESCE(cr_i.cantidad * pr.precio, 0) + 
-        COALESCE(cr_i.cantidad * ser.precio, 0)
-    ) AS total  from carrito as cr 
+    cursor = mysql.connection.cursor()
+    
+    query = """
+    SELECT cr.id_carrito, cl.nombres, cl.apellidos, cl.cedula, cr.fecha_hora, 
+        SUM(
+            COALESCE(cr_i.cantidad * pr.precio, 0) + 
+            COALESCE(cr_i.cantidad * ser.precio, 0)
+        ) AS total  
+    FROM carrito AS cr 
     INNER JOIN cliente AS cl ON cl.id_cliente = cr.id_cliente
-LEFT JOIN carrito_items AS cr_i ON cr_i.id_carrito = cr.id_carrito
-LEFT JOIN producto AS pr ON pr.id_producto_inv = cr_i.id_producto
-LEFT JOIN servicio AS ser ON ser.id_servicio = cr_i.id_servicio
-WHERE cr.estado = 'pendiente' 
-    group by cr.id_carrito,cl.cedula
-    ;"""
+    LEFT JOIN carrito_items AS cr_i ON cr_i.id_carrito = cr.id_carrito
+    LEFT JOIN producto AS pr ON pr.id_producto_inv = cr_i.id_producto
+    LEFT JOIN servicio AS ser ON ser.id_servicio = cr_i.id_servicio
+    WHERE cr.estado = 'pendiente' 
+    GROUP BY cr.id_carrito, cl.cedula;
+    """
     cursor.execute(query)
-    carritos=cursor.fetchall()
+    carritos = cursor.fetchall()
+    
+    query = """
+    SELECT car.id_carrito, pr.nombre, pr.precio, car.cantidad
+    FROM producto AS pr 
+    INNER JOIN carrito_items AS car ON car.id_producto = pr.id_producto_inv 
+    WHERE car.id_producto IS NOT NULL;
+    """
+    cursor.execute(query)
+    productos = cursor.fetchall()
+    
+    query = """
+    SELECT car.id_carrito, sr.nombre_servicio, sr.precio 
+    FROM servicio AS sr 
+    INNER JOIN carrito_items AS car ON car.id_servicio = sr.id_servicio 
+    WHERE car.id_servicio IS NOT NULL;
+    """
+    cursor.execute(query)
+    servicios = cursor.fetchall()
+
     cursor.close()
-    return render_template('pg_proformas.html',carritos=carritos)
+    return render_template('pg_proformas.html', carritos=carritos, productos=productos, servicios=servicios)
+
 
 @app.route('/eliminarCarrito/<int:id_carrito>', methods=['DELETE'])
 def eliminar_carrito(id_carrito):
@@ -337,25 +320,22 @@ def eliminar_carrito(id_carrito):
     cursor.close()
     return jsonify({"mensaje": "Carrito eliminado correctamente"}), 200
 
-@app.route('/pg_turnos.html')
-def verTurnos():
-    cursor=mysql.connection.cursor()
-    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente'  order by tur.fecha_hora asc;"
-    cursor.execute(query)
-    turnos=cursor.fetchall()
-    cursor.close()
-    return render_template('pg_turnos.html',turnos=turnos)
-
-@app.route('/facturarTurno/<int:id_turno>', methods=['POST'])
-def completar_turno(id_turno):
+@app.route('/facturarTurno/<int:id_carrito>', methods=['POST'])
+def completar_turno(id_carrito):
     cursor = mysql.connection.cursor()
-    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente' and tur.id_turno= %s order by tur.fecha_hora asc Limit 1 ;"
-    cursor.execute(query, (id_turno,))
+    query="""
+
+    """
+
+    cursor.execute(query, (id_carrito,))
     turnoCompleto=cursor.fetchone()
-    #query = "UPDATE turno SET estado = 'completado' WHERE id_turno = %s"
-    #cursor.execute(query, (id_turno,))
-   # mysql.connection.commit()
-    query="INSERT INTO factura (id_cliente, id_turno, fecha_hora, total) VALUES (%s, %s, %s, %s);"
+    query = "UPDATE carrito SET estado = 'completado' WHERE id_carrito = %s"
+    cursor.execute(query, (id_carrito,))
+    mysql.connection.commit()
+
+    query="INSERT INTO factura_cliente (id_cliente, id_carrito, total) VALUES (%s, %s, %s);"
+    cursor.execute(query,(turnoCompleto[0],turnoCompleto[1],turnoCompleto[2]))
+    mysql.connection.commit()
     cursor.close()
     
 

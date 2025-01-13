@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS cuenta_por_cobrar (
 -- Tabla factura_no_cliente
 CREATE TABLE IF NOT EXISTS factura_no_cliente (
     id_factura INT AUTO_INCREMENT PRIMARY KEY,
-    nombres varchar(30) not null,
+    nombres varchar(30) default 'consumidor_final',
     ci_ruc char(13) not null,
     fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     servicio varchar(30) not null,
@@ -156,16 +156,6 @@ CREATE TABLE IF NOT EXISTS pedido (
     estado ENUM ('pendiente','completado'),
     CONSTRAINT fk_pedido_admin FOREIGN KEY(id_admin) REFERENCES administrador(id_admin)
         ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- Tabla factura_no_cliente
-CREATE TABLE IF NOT EXISTS factura_no_cliente (
-    id_factura INT AUTO_INCREMENT PRIMARY KEY,
-    nombres varchar(30) not null,
-    ci_ruc char(13) not null,
-    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    servicio varchar(30) not null,
-    total DOUBLE NOT NULL
 );
 
 
