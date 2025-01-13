@@ -702,7 +702,7 @@ def agregar_actualizar_trabajador():
     return jsonify({'message': 'Trabajador guardado/actualizado correctamente'}), 200
 
 # Ruta para mostrar la página de inicio de sesión del administrador
-@app.route('/admin_login.html')
+@app.route('/admin')
 def admin_login_page():
     return render_template('pg_admin_login.html')
 
@@ -710,18 +710,18 @@ def admin_login_page():
 @app.route('/adminLogin', methods=['POST'])
 def admin_login():
     data = request.json
-    id_trabajador = data.get('id_trabajador')
+    cedula = data.get('cedula')
     clave = data.get('clave')
 
     cursor = mysql.connection.cursor()
-    query = "SELECT id_admin FROM administrador WHERE id_trabajador = %s AND clave = %s;"
-    cursor.execute(query, (id_trabajador, clave))
+    query = "SELECT ad.id_admin, tb.cedula, tb.nombres, tb.apellidos FROM administrador as ad  inner join trabajador as tb on tb.id_trabajador=ad.id_trabajador WHERE tb.cedula = %s AND ad.clave = %s;"
+    cursor.execute(query, (cedula, clave))
     admin_data = cursor.fetchone()
     cursor.close()
 
     if admin_data:
         session['admin_id'] = admin_data[0]
         session['logged_in'] = True
-        return jsonify({"id_admin": admin_data[0], "nombre": f"Admin {admin_data[0]}"})
+        return jsonify({"id_admin": admin_data[0], "nombre": f"{admin_data[2]} {admin_data[3]}"})
     else:
         return jsonify({"error": "Credenciales no válidas para Administrador."}), 404

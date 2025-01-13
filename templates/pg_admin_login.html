@@ -11,7 +11,7 @@
         <h2 class="text-center text-light">Inicio de Sesión - Administrador</h2>
         <form id="adminLoginForm" method="POST">
             <div class="mb-3">
-                <label for="id_trabajador" class="form-label text-light">ID Trabajador</label>
+                <label for="id_trabajador" class="form-label text-light">Cédula</label>
                 <input type="text" class="form-control" id="id_trabajador" name="id_trabajador" placeholder="Ingrese su ID" required>
             </div>
             <div class="mb-3">
@@ -28,7 +28,7 @@
     document.getElementById("adminLoginForm").addEventListener("submit", async function (event) {
         event.preventDefault();
 
-        const id_trabajador = document.getElementById("id_trabajador").value;
+        const cedula = document.getElementById("id_trabajador").value;
         const clave = document.getElementById("clave").value;
         const errorMessage = document.getElementById("errorMessage");
 
@@ -37,7 +37,7 @@
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ id_trabajador, clave })
+            body: JSON.stringify({ cedula, clave })
         });
 
         if (response.ok) {
