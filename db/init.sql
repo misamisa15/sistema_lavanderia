@@ -7,7 +7,7 @@ USE sistema_lavanderia;
 CREATE TABLE IF NOT EXISTS cliente (
     id_cliente INT AUTO_INCREMENT PRIMARY KEY,
     usuario_cliente varchar(20) not null UNIQUE,
-    clave varchar(20) not null,
+    clave varchar(20) not null,w
     nombres VARCHAR(20) NOT NULL,
     apellidos VARCHAR(20) NOT NULL,
     cedula CHAR(10) NOT NULL UNIQUE,

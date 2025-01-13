@@ -5,6 +5,8 @@ from flask import Flask,render_template, request
 from flask_mysqldb import MySQL     
 from datetime import datetime
 from flask_mysqldb import MySQL
+from flask_cors import CORS
+
 
 
 app.config['MYSQL_HOST'] = 'localhost'
@@ -61,17 +63,21 @@ def carrito():
 def guardarCarrito():
     data=request.json
     productos = data.get('productos', [])
-    servicios = data.get('servicios', []) 
-    fecha=data.get('fecha')
-    hora=data.get('hora')
-    fechahora = f"{fecha} {hora}"      
+    servicio = data.get('servicios', [0])
     id_cliente = session.get('user_id')
+
+
     cursor = mysql.connection.cursor()
 
-     
-    query="INSERT INTO carrito (id_cliente, fecha_hora) values (%s,%s);"
-    cursor.execute(query,(id_cliente,fechahora))
-    mysql.connection.commit()
+    if servicio:
+        query="INSERT INTO carrito (id_cliente,id_servicio) values (%s,%s);"
+        cursor.execute(query,(id_cliente,servicio))
+        mysql.connection.commit()
+
+    else:    
+        query="INSERT INTO carrito (id_cliente) values (%s);"
+        cursor.execute(query,('1'))
+        mysql.connection.commit()
 
 
     query=("Select id_carrito from carrito order by id_carrito desc limit 1;")
@@ -84,10 +90,6 @@ def guardarCarrito():
             cursor.execute(query_producto, (id_carrito, producto['producto_id'], producto['cantidad']))
             query="UPDATE producto set stock=stock - %s where id_producto_inv = %s;"
             cursor.execute(query,(producto['cantidad'],producto['producto_id']))
-    if servicios:
-        for servicio in servicios:
-            query_servicio = "INSERT INTO carrito_items (id_carrito, id_servicio, cantidad) VALUES (%s, %s, %s);"
-            cursor.execute(query_servicio, (id_carrito, servicio['servicio_id'], 1))
     mysql.connection.commit()
 
     return jsonify({"message": "Carrito guardado correctamente"}), 200
@@ -244,30 +246,6 @@ def index():
     
     return render_template('pagina_principal.html', buttons=buttons)
 
-@app.route('/trabajadores.html')
-def pg_trabajadores():
-    cursor= mysql.connection.cursor()
-    query="Select id_trabajador,nombres,apellidos,cedula, contrato, fecha_contrato, salario from trabajador;"
-    cursor.execute(query)
-    trabajadores=cursor.fetchall()
-    return render_template('pg_trabajadores.html',trabajadores=trabajadores)
-
-@app.route('/newTrabajador', methods=['POST'])
-def nuevoTrabajador():
-    data=request.json
-    nombres=data.get('nombres')
-    apellidos=data.get('apellidos')
-    cedula=data.get('cedula')
-    contrato=data.get('contrato')
-    fecha=data.get('fecha')
-    salario=data.get('salario')
-    cursor=mysql.connection.cursor()
-    query="INSERT INTO trabajador(nombres,apellidos,cedula,contrato, fecha_contrato, salario) values (%s,%s,%s,%s,%s,%s);"
-    cursor.execute(query,(nombres,apellidos,cedula,contrato,fecha,salario))
-    mysql.commit()
-    cursor.close()
-    return jsonify({"mensaje": "Trabajador agregado con éxito."}), 200
-
 @app.route('/ver_proformas.html')
 def ver_proformas():
     cursor = mysql.connection.cursor()
@@ -356,7 +334,7 @@ def buscarTurno():
     data=request.json
     cedula=data.get('cedula')
     cursor=mysql.connection.cursor()
-    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente' and cedula= %s order by tur.fecha_hora asc Limit 1 ;"
+    query="Select tur.id_turno, cl.nombres, cl.apellidos,cedula,ser.nombre_servicio, ser.precio,tur.fecha_hora from turno as tur inner join cliente  cl on cl.id_cliente=tur.id_cliente inner join servicio as ser on ser.id_servicio=tur.tipo_servicio where DATE(tur.fecha_hora) >= CURDATE() AND estado='pendiente' and cedula=%s order by tur.fecha_hora asc Limit 1 ;"
     cursor.execute(query,(cedula,)) 
     turno=cursor.fetchone()
     cursor.close()
@@ -653,4 +631,97 @@ def imprimir_factura(id_factura):
         "total": factura[5]
     }
 
+    # Renderizar la plantilla imprimible
     return render_template('imprimir_factura.html', factura=factura_dict)
+
+@app.route('/trabajadores.html')
+def pagtrabajadores():
+    return render_template('pg_trabajadores.html')
+
+@app.route('/trabajador', methods=['POST'])
+def buscar_trabajador():
+    data = request.json
+    nombre = data.get('nombre', None)
+
+    if not nombre:
+        return jsonify({'error': 'Nombre de trabajador no proporcionado'}), 400
+
+    cursor = mysql.connection.cursor()
+    query = """SELECT id_trabajador, nombres, apellidos, cedula, contrato, fecha_contrato, salario 
+               FROM trabajador WHERE nombres LIKE %s"""
+    cursor.execute(query, (f"%{nombre}%",))
+    trabajador = cursor.fetchone()
+
+    if not trabajador:
+        return jsonify({'error': 'Trabajador no encontrado'}), 404
+
+    trabajador_data = {
+        'id_trabajador': trabajador[0],
+        'nombres': trabajador[1],
+        'apellidos': trabajador[2],
+        'cedula': trabajador[3],
+        'contrato': trabajador[4],
+        'fecha_contrato': trabajador[5].strftime('%Y-%m-%d'),
+        'salario': trabajador[6]
+    }
+    return jsonify(trabajador_data), 200
+
+# Ruta para agregar o actualizar un trabajador
+@app.route('/trabajador/agregar-actualizar', methods=['POST'])
+def agregar_actualizar_trabajador():
+    data = request.json
+    nombres = data.get('nombres', None)
+    apellidos = data.get('apellidos', None)
+    cedula = data.get('cedula', None)
+    contrato = data.get('contrato', None)
+    fecha_contrato = data.get('fecha_contrato', None)
+    salario = data.get('salario', None)
+
+    if not (nombres and apellidos and cedula and contrato and fecha_contrato and salario):
+        return jsonify({'error': 'Todos los campos son obligatorios'}), 400
+
+    cursor = mysql.connection.cursor()
+
+    # Verificar si el trabajador ya existe por cédula
+    query_check = "SELECT id_trabajador FROM trabajador WHERE cedula = %s"
+    cursor.execute(query_check, (cedula,))
+    trabajador = cursor.fetchone()
+
+    if trabajador:
+        # Actualizar trabajador existente
+        query_update = """UPDATE trabajador SET nombres=%s, apellidos=%s, contrato=%s, 
+                          fecha_contrato=%s, salario=%s WHERE cedula=%s"""
+        cursor.execute(query_update, (nombres, apellidos, contrato, fecha_contrato, salario, cedula))
+    else:
+        # Insertar nuevo trabajador
+        query_insert = """INSERT INTO trabajador (nombres, apellidos, cedula, contrato, fecha_contrato, salario) 
+                          VALUES (%s, %s, %s, %s, %s, %s)"""
+        cursor.execute(query_insert, (nombres, apellidos, cedula, contrato, fecha_contrato, salario))
+
+    mysql.connection.commit()
+    return jsonify({'message': 'Trabajador guardado/actualizado correctamente'}), 200
+
+# Ruta para mostrar la página de inicio de sesión del administrador
+@app.route('/admin_login.html')
+def admin_login_page():
+    return render_template('pg_admin_login.html')
+
+# Ruta para procesar el inicio de sesión del administrador
+@app.route('/adminLogin', methods=['POST'])
+def admin_login():
+    data = request.json
+    id_trabajador = data.get('id_trabajador')
+    clave = data.get('clave')
+
+    cursor = mysql.connection.cursor()
+    query = "SELECT id_admin FROM administrador WHERE id_trabajador = %s AND clave = %s;"
+    cursor.execute(query, (id_trabajador, clave))
+    admin_data = cursor.fetchone()
+    cursor.close()
+
+    if admin_data:
+        session['admin_id'] = admin_data[0]
+        session['logged_in'] = True
+        return jsonify({"id_admin": admin_data[0], "nombre": f"Admin {admin_data[0]}"})
+    else:
+        return jsonify({"error": "Credenciales no válidas para Administrador."}), 404
