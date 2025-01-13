@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="container-fluid px-4">
     {% if session.get('user_id') %}
     <div id="userData" data-user-id="{{ session.user_id|tojson|safe }}"></div>
@@ -61,6 +62,7 @@
                 <div class="card border-success shadow">
                     <div class="card-header bg-success text-white py-3">
                         <h5 class="mb-0 text-center">Carrito de Compras</h5>
+                        
                     </div>
                     <div class="card-body p-0">
                         <ul id="listaCarrito" class="list-group list-group-flush"></ul>
@@ -108,6 +110,59 @@
     </div>
 </div>
 
+<!--MODAL PARA TURNO-->
+
+  
+  <!-- Modal -->
+  <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="false">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="appointmentModalLabel">Agendar Turnos</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formTurno">
+            <!-- Número de Cédula -->
+            <div class="mb-3">
+              <label for="cedula" class="form-label text-success">Número de Cédula:</label>
+              {% if session.user_cedula %}
+              <span class="me-3 text-danger">{{ session.user_cedula }}</span>
+              {% endif %}
+            </div>
+  
+
+            <!-- Fecha -->
+            <div class="mb-3">
+              <label for="fecha" class="form-label text-success">Fecha:</label>
+              <input type="date" class="form-control border-danger" id="fecha" name="fecha" required>
+            </div>
+  
+            <div class="mb-3">
+              <label for="hora" class="form-label text-success">Hora:</label>
+              <input type="time" class="form-control border-danger" id="hora" name="hora" required step="3600">
+            </div>
+            <div class="alert alert-info">
+                <strong>Info!</strong> Revisa bien los servicios que quieres agendar!
+              </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" id="EnviarTodo" class="btn btn-success">
+                {% if session.user_cedula %}
+                Confirmar Turno
+                {% else %}
+                Inicie sesión para agendar
+                {% endif %}
+              </button>
+            </div>
+          </form>
+          <div id="mensajeError" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const modal = new bootstrap.Modal(document.getElementById('modalCantidad'));
@@ -120,8 +175,12 @@
         const errorStock = document.getElementById('errorStock');
         let productoTemporal = null;
         let carrito = [];
-        let servicioEnCarrito = false;
+        const fec = document.getElementById('fecha');
+        const hora = document.getElementById('hora');
         const userId = document.getElementById('userData')?.dataset.userId;
+        const botonConfirmarTurno = document.getElementById("EnviarTodo");
+        const modalTurno = document.getElementById("appointmentModal");
+
 
         document.querySelectorAll('.agregar-producto').forEach(boton => {
             boton.addEventListener('click', () => {
@@ -185,29 +244,31 @@
         });
 
         document.querySelectorAll('.agregar-servicio').forEach(boton => {
-            boton.addEventListener('click', () => {
-                alert('No olvides separar tu turno en la sección de "Turno"');
-                if (servicioEnCarrito) {
-                    alert('Solo se puede agregar un servicio al carrito. Por favor, elimine el servicio actual antes de agregar otro.');
-                    return;
-                }
+    boton.addEventListener('click', () => {
+        const servicioId = parseInt(boton.getAttribute('data-id'));
+        const servicioExistente = carrito.find(item => item.id === servicioId && item.esServicio);
 
-                carrito.push({
-                    id: parseInt(boton.getAttribute('data-id')),
-                    nombre: boton.getAttribute('data-nombre'),
-                    precio: parseFloat(boton.getAttribute('data-precio')),
-                    cantidad: 1,
-                    esServicio: true
-                });
-                
-                servicioEnCarrito = true;
-                actualizarCarrito();
-            });
+        if (servicioExistente) {
+            alert('Este servicio ya está en el carrito.');
+            return;
+        }
+
+        carrito.push({
+            id: servicioId,
+            nombre: boton.getAttribute('data-nombre'),
+            precio: parseFloat(boton.getAttribute('data-precio')),
+            cantidad: 1, // Servicios no tienen múltiples cantidades
+            esServicio: true
         });
+
+        actualizarCarrito();
+    });
+});
+
 
         botonVaciar.addEventListener('click', () => {
             carrito = [];
-            servicioEnCarrito = false;
+            
             actualizarCarrito();
         });
 
@@ -243,68 +304,83 @@
             
             if (total > 0 ) {
     document.getElementById("enviarCarrito").innerHTML = `
-        <button type="button" class="btn btn-success w-100" id="btnEnviar">Enviar</button>
-    `;
+        <button type="button" class="btn btn-success w-100" id="btnEnviar" data-bs-toggle="modal" data-bs-target="#appointmentModal">Enviar</button>
+        `;
                     document.getElementById("btnEnviar").addEventListener("click", enviarCarrito);
               
-    
+                
         } else {
     document.getElementById("enviarCarrito").innerHTML = '';
 }
         }
 
         function eliminarDelCarrito(indice) {
-            if (carrito[indice].esServicio) {
-                servicioEnCarrito = false;
-            }
+            
             carrito.splice(indice, 1);
             actualizarCarrito();
         }
 
-        function enviarCarrito() {
-            if(userId){
-            const productosParaEnviar = carrito.filter(item => !item.esServicio).map(item => ({
-                producto_id: item.id,
-                cantidad: item.cantidad
-            }));
 
-            const serviciosParaEnviar = carrito.filter(item => item.esServicio).map(item => ({
-                servicio_id: item.id
-            }));
+        botonConfirmarTurno.addEventListener("click", (event) => {
+        event.preventDefault(); // Evitar el envío del formulario por defecto
 
-            const datosParaEnviar = {
-                productos: productosParaEnviar,
-                servicios: serviciosParaEnviar
-            };}
-            else{
-                alert("Inicia sesión para guardar el carrito.")
-            }
-            
+        const fecha = fec.value;
+        const horaSeleccionada = hora.value;
 
-            
-            fetch('/carrito_guardar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(datosParaEnviar)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error al guardar el carrito');
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert('Carrito guardado correctamente');
-                carrito = [];
-                servicioEnCarrito = false;
-                actualizarCarrito();
-            })
-            .catch(error => {
-                alert('Error al guardar el carrito: ' + error.message);
-            });
+        if (!fecha || !horaSeleccionada) {
+            alert("Por favor, selecciona una fecha y hora para agendar.");
+            return;
         }
+
+        if (!userId) {
+            alert("Inicia sesión para guardar el carrito.");
+            return;
+        }
+
+        const productosParaEnviar = carrito.filter(item => !item.esServicio).map(item => ({
+            producto_id: item.id,
+            cantidad: item.cantidad
+        }));
+
+        const serviciosParaEnviar = carrito.filter(item => item.esServicio).map(item => ({
+            servicio_id: item.id
+        }));
+
+        const datosParaEnviar = {
+            productos: productosParaEnviar,
+            servicios: serviciosParaEnviar,
+            fecha: fecha,
+            hora: horaSeleccionada
+        };
+
+        fetch('/carrito_guardar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datosParaEnviar)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al guardar el carrito');
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('Carrito guardado correctamente');
+            carrito = [];
+            actualizarCarrito();
+            const bootstrapModal = bootstrap.Modal.getInstance(modalTurno);
+            bootstrapModal.hide(); // Cerrar el modal al guardar exitosamente
+        })
+        .catch(error => {
+            alert('Error al guardar el carrito: ' + error.message);
+        });
     });
+    });
+
+
+
+
 </script>
 {% endblock %}

@@ -25,26 +25,11 @@ CREATE TABLE IF NOT EXISTS servicio(
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla turno
-CREATE TABLE IF NOT EXISTS turno (
-    id_turno INT AUTO_INCREMENT PRIMARY KEY,
-    id_cliente INT NOT NULL,
-    tipo_servicio int not null,
-    fecha_hora TIMESTAMP NOT NULL,
-    estado ENUM('pendiente','completado'),
-    CONSTRAINT fk_turn_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_turn_servicio FOREIGN KEY(tipo_servicio) REFERENCES servicio (id_servicio)
-        ON DELETE CASCADE ON UPDATE CASCADE	
-);
-
 -- Tabla comprobante
 CREATE TABLE IF NOT EXISTS comprobante (
     id_comprobante INT AUTO_INCREMENT PRIMARY KEY,
     id_turno INT NOT NULL,
-    fecha_hora TIMESTAMP NOT NULL,
-    CONSTRAINT fk_comprobante_turno FOREIGN KEY (id_turno) REFERENCES turno (id_turno) 
-        ON DELETE CASCADE ON UPDATE CASCADE
+    fecha_hora TIMESTAMP NOT NULL
 );
 
 -- Tabla cuenta_por_cobrar
@@ -55,29 +40,14 @@ CREATE TABLE IF NOT EXISTS cuenta_por_cobrar (
     fecha_hora TIMESTAMP NOT NULL,
     total DOUBLE NOT NULL,
     CONSTRAINT fk_cuentaC_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_cuentaC_turno FOREIGN KEY (id_turno) REFERENCES turno (id_turno) 
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- Tabla factura_cliente
-CREATE TABLE IF NOT EXISTS factura_cliente (
-    id_factura INT AUTO_INCREMENT PRIMARY KEY,
-    id_cliente INT NOT NULL,
-    id_carrito INT,
-    placa char(6),
-    id_turno INT NOT NULL,
-    fecha_hora TIMESTAMP NOT NULL,
-    total DOUBLE NOT NULL,
-    CONSTRAINT fk_factura_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_factura_turno FOREIGN KEY (id_turno) REFERENCES turno (id_turno) 
-        ON DELETE CASCADE ON UPDATE CASCADE
-);
+
 -- Tabla factura_no_cliente
 CREATE TABLE IF NOT EXISTS factura_no_cliente (
     id_factura INT AUTO_INCREMENT PRIMARY KEY,
-    nombres varchar(30) not null,m
+    nombres varchar(30) not null,
     ci_ruc char(13) not null,
     fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     servicio varchar(30) not null,
@@ -97,25 +67,40 @@ CREATE TABLE IF NOT EXISTS producto (
 CREATE TABLE IF NOT EXISTS carrito(
     id_carrito INT  AUTO_INCREMENT PRIMARY KEY,
     id_cliente int not null,
-    id_servicio int,
-    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_hora TIMESTAMP,
     estado ENUM('pendiente','pagado') DEFAULT 'pendiente',
     CONSTRAINT fk_carrito_cliente FOREIGN KEY(id_cliente) REFERENCES cliente(id_cliente) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_carrito_servicio FOREIGN KEY (id_servicio) REFERENCES servicio(id_servicio)
         ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS carrito_items(
     id_car_pro int AUTO_INCREMENT PRIMARY KEY,
     id_carrito int not null,
-    id_producto int not null,
-    cantidad int not null,
+    id_producto int,
+    id_servicio int,
+    cantidad int ,
     CONSTRAINT fk_item_carrito FOREIGN KEY(id_carrito) REFERENCES carrito(id_carrito)
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_item_producto FOREIGN KEY(id_producto) REFERENCES producto(id_producto_inv)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+	constraint fk_item_servicio FOREIGN KEY(id_servicio) REFERENCES servicio(id_servicio)
+    ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+
+-- Tabla factura_cliente
+CREATE TABLE IF NOT EXISTS factura_cliente (
+    id_factura INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    id_carrito INT,
+    fecha_hora TIMESTAMP DEFAULT current_timestamp,
+    total DOUBLE NOT NULL,
+    CONSTRAINT fk_factura_cliente FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_factura_carrito FOREIGN KEY(id_carrito) REFERENCES carrito(id_carrito)
         ON DELETE CASCADE ON UPDATE CASCADE
 );
+
 -- Crear la tabla historial_producto
 CREATE TABLE IF NOT EXISTS historial_producto (
     id_historial INT AUTO_INCREMENT PRIMARY KEY,

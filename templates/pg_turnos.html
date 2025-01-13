@@ -26,7 +26,7 @@ Turnos Próximos
                                     <i class="bi bi-trash"></i> Eliminar Turno
                                 </button>
                                 
-                                <button class="btn btn-success botonTurno" onclick="">
+                                <button class="btn btn-success botonTurno" onclick="facturarTurno('{{ turno[0] }}')">
                                     <i class="bi bi-check-circle"></i> Facturar Turno
                                 </button>
                             </div>
@@ -121,6 +121,37 @@ function eliminarPedido(id_pedido) {
     .then(data => {
         alert('Turno eliminado correctamente');
         document.getElementById('resultado').innerHTML = '';
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+
+function facturarTurno(id_turno) {
+    if (!confirm('¿Está seguro de facturar este turno?')) return;
+    
+    fetch(`/facturarTurno/${id_turno}`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'text/html'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error al facturar el turno');
+        }
+        return response.text(); // Get response as text since we expect HTML
+    })
+    .then(html => {
+        // Create a temporary container and insert the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Replace the current page content with the new HTML
+        document.documentElement.innerHTML = html;
+        
+        // Update the URL to match the new page
+        window.history.pushState({}, '', `/facturarTurno/${id_turno}`);
     })
     .catch(error => {
         alert('Error: ' + error.message);
