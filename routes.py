@@ -690,3 +690,28 @@ def agregar_actualizar_trabajador():
 
     mysql.connection.commit()
     return jsonify({'message': 'Trabajador guardado/actualizado correctamente'}), 200
+
+# Ruta para mostrar la página de inicio de sesión del administrador
+@app.route('/admin_login.html')
+def admin_login_page():
+    return render_template('pg_admin_login.html')
+
+# Ruta para procesar el inicio de sesión del administrador
+@app.route('/adminLogin', methods=['POST'])
+def admin_login():
+    data = request.json
+    id_trabajador = data.get('id_trabajador')
+    clave = data.get('clave')
+
+    cursor = mysql.connection.cursor()
+    query = "SELECT id_admin FROM administrador WHERE id_trabajador = %s AND clave = %s;"
+    cursor.execute(query, (id_trabajador, clave))
+    admin_data = cursor.fetchone()
+    cursor.close()
+
+    if admin_data:
+        session['admin_id'] = admin_data[0]
+        session['logged_in'] = True
+        return jsonify({"id_admin": admin_data[0], "nombre": f"Admin {admin_data[0]}"})
+    else:
+        return jsonify({"error": "Credenciales no válidas para Administrador."}), 404
