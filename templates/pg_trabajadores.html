@@ -56,9 +56,9 @@
         <div class="col-lg-6">
             <div class="card p-4">
                 <h3 class="text-center"><i class="bi bi-search"></i> Buscar Trabajador</h3>
-                <p class="text-center text-muted">Introduce el nombre del trabajador para buscar información.</p>
+                <p class="text-center text-muted">Introduce la cédula del trabajador para buscar información.</p>
                 <div class="input-group mb-3">
-                    <input type="text" id="nombre_trabajador" class="form-control" placeholder="Nombre del trabajador">
+                    <input type="text" id="nombre_trabajador" class="form-control" placeholder="Cédula del trabajador">
                     <button class="btn btn-primary" id="buscarTrabajador">
                         <i class="bi bi-search"></i> Buscar
                     </button>
@@ -72,39 +72,55 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Función para buscar trabajador
-    document.getElementById("buscarTrabajador").addEventListener("click", function () {
-        const nombreTrabajador = document.getElementById("nombre_trabajador").value;
+document.getElementById("buscarTrabajador").addEventListener("click", function () {
+    const nombreTrabajador = document.getElementById("nombre_trabajador").value;
 
-        if (!nombreTrabajador) {
-            document.getElementById("resultado").innerHTML = `
-                <div class="alert alert-warning text-center" role="alert">
-                    <i class="bi bi-exclamation-circle"></i> Por favor, ingresa un nombre de trabajador.
-                </div>
-            `;
-            return;
+    fetch('/trabajador', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ cedula: nombreTrabajador })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("No se encontraron trabajadores");
         }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById("nombre_trabajador").value = "";
+        let resultado = '';
 
-        fetch('/trabajador', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ nombre: nombreTrabajador })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Trabajador no encontrado");
-            }
-            return response.json();
-        })
-        .then(data => {
-            document.getElementById("nombre_trabajador").value = "";
-
-            let resultado = `
+        if (Array.isArray(data)) {
+            resultado = '<div class="row">';
+            data.forEach(trabajador => {
+                resultado += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">
+                                    <i class="bi bi-person"></i> ${trabajador.nombres} ${trabajador.apellidos}
+                                </h5>
+                                <p><strong>ID:</strong> ${trabajador.id_trabajador}</p>
+                                <p><strong>Cédula:</strong> ${trabajador.cedula}</p>
+                                <p><strong>Contrato:</strong> ${trabajador.contrato}</p>
+                                <p><strong>Fecha de Contrato:</strong> ${trabajador.fecha_contrato}</p>
+                                <p><strong>Salario:</strong> $${trabajador.salario.toFixed(2)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            resultado += '</div>';
+        } else {
+            // Single worker
+            resultado = `
                 <div class="card mt-4">
                     <div class="card-body">
-                        <h4 class="card-title text-success"><i class="bi bi-person"></i> Información del Trabajador</h4>
+                        <h4 class="card-title text-success">
+                            <i class="bi bi-person"></i> Información del Trabajador
+                        </h4>
                         <p><strong>ID:</strong> ${data.id_trabajador}</p>
                         <p><strong>Nombres:</strong> ${data.nombres}</p>
                         <p><strong>Apellidos:</strong> ${data.apellidos}</p>
@@ -115,17 +131,18 @@
                     </div>
                 </div>
             `;
-            document.getElementById("resultado").innerHTML = resultado;
-        })
-        .catch(error => {
-            document.getElementById("resultado").innerHTML = `
-                <div class="alert alert-danger text-center" role="alert">
-                    <i class="bi bi-exclamation-triangle"></i> ${error.message}
-                </div>
-            `;
-        });
+        }
+        
+        document.getElementById("resultado").innerHTML = resultado;
+    })
+    .catch(error => {
+        document.getElementById("resultado").innerHTML = `
+            <div class="alert alert-danger text-center" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> ${error.message}
+            </div>
+        `;
     });
-
+});
     // Función para agregar o actualizar trabajador
     document.getElementById("formTrabajador").addEventListener("submit", function (event) {
         event.preventDefault();

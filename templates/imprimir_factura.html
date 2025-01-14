@@ -79,8 +79,32 @@
                 <p><strong>Número de Factura:</strong> {{ factura.id_factura }}</p>
                 <p><strong>Nombre del Cliente:</strong> {{ factura.nombres }}</p>
                 <p><strong>Cédula/RUC:</strong> {{ factura.ci_ruc }}</p>
-                <p><strong>Fecha y Hora:</strong> {{ factura.fecha_hora }}</p>
-                <p><strong>Servicio:</strong> {{ factura.servicio }}</p>
+                <p><strong>Fecha y Hora Pedido:</strong> {{ factura.fecha_hora_car }}</p>
+                <p><strong>Fecha y Hora Facturado:</strong> {{ factura.fecha_hora_fac }}</p>   
+                
+                    {%if productos%}
+                    <p><strong>Productos:</strong></p>
+                    <ul>
+                        {%for producto in productos%}
+                        {%if factura.id_carrito==producto[0]%}
+                        <li>{{ producto[1] }} - ${{ producto[2] }} - Cantidad: {{ producto[3] }}</li>
+                        {%endif%}
+                        {%endfor%}
+                    </ul>
+                    {%endif%}
+                         
+                    
+                    {%if servicios%}
+                    <p><strong>Servicios:</strong></p>
+                    <ul>
+                        {%for servicio in servicios%}
+                        {%if factura.id_carrito==servicio[0]%}
+                        <li>{{ servicio[1] }} - ${{ servicio[2] }}</li>
+                        {%endif%}
+                        {%endfor%}
+                    </ul>
+                    {%endif%}
+                
                 <p><strong>Total:</strong> ${{ factura.total }}</p>
             </div>
             <div class="card-footer text-center no-print">

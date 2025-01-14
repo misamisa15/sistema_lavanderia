@@ -371,7 +371,7 @@
             carrito = [];
             actualizarCarrito();
             const bootstrapModal = bootstrap.Modal.getInstance(modalTurno);
-            bootstrapModal.hide(); // Cerrar el modal al guardar exitosamente
+            bootstrapModal.hide(); 
         })
         .catch(error => {
             alert('Error al guardar el carrito: ' + error.message);

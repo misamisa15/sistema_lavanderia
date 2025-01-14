@@ -7,7 +7,7 @@ USE sistema_lavanderia;
 CREATE TABLE IF NOT EXISTS cliente (
     id_cliente INT AUTO_INCREMENT PRIMARY KEY,
     usuario_cliente varchar(20) not null UNIQUE,
-    clave varchar(20) not null,w
+    clave varchar(20) not null,
     nombres VARCHAR(20) NOT NULL,
     apellidos VARCHAR(20) NOT NULL,
     cedula CHAR(10) NOT NULL UNIQUE,
@@ -222,7 +222,7 @@ DELIMITER ;
 
 -- Insert for trabajador
 INSERT INTO trabajador (nombres, apellidos, cedula, contrato, fecha_contrato, salario)
-VALUES ('Alcivar', 'Jostyn', '1234567890', '1', '2024-12-26', 500.00);
+VALUES ('21', 'Jostyn', '1234567890', '1', '2024-12-26', 500.00);
 
 -- Insert for administrador
 INSERT INTO administrador (id_trabajador, clave) 
